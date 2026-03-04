@@ -10,21 +10,17 @@ namespace PolyBridge.Generator.Generators
         public string PlatformSuffix => "Android";
 
         public void GenerateFields(CodeBuilder builder, ImmutableArray<MethodModel> methods)
-            => builder.AppendField("private", true, "AndroidJavaObject", "_nativeObject");
+            => builder.AppendField("private", true, "UnityEngine.AndroidJavaObject", "_nativeObject");
 
         public void GenerateConstructorBody(CodeBuilder builder, string classPath)
-            => builder.AppendLine($"_nativeObject = new AndroidJavaObject(\"{classPath}\");");
+            => builder.AppendLine($"_nativeObject = new UnityEngine.AndroidJavaObject(\"{classPath}\");");
 
         public void GenerateMethodBody(CodeBuilder builder, MethodModel method)
         {
             var paramArgs = !method.Parameters.IsEmpty ? $", {method.ParameterNames}" : "";
             var callMethod = method.HasReturn ? $"Call<{method.InnerReturnType}>" : "Call";
             var nativeCall = $"_nativeObject.{callMethod}(\"{method.AndroidNativeName}\"{paramArgs})";
-            var returnStr = method.HasReturn ? "return " : "";
-
-            builder.AppendLine(method.IsAsync
-                ? $"{returnStr}await Task.Run(() => {nativeCall});"
-                : $"{returnStr}{nativeCall};");
+            builder.AppendLine(method.FormatCall(nativeCall));
         }
     }
 }

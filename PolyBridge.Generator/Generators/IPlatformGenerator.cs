@@ -6,8 +6,8 @@ namespace PolyBridge.Generator.Generators
 {
     internal interface IPlatformGenerator
     {
-        string PlatformSymbol { get; } // UNITY_ANDROID, UNITY_IOS 등
-        string PlatformSuffix { get; } // Android, IOS 등
+        string PlatformSymbol { get; } // ex) UNITY_ANDROID, UNITY_IOS
+        string PlatformSuffix { get; } // ex) Android, IOS
         void GenerateFields(CodeBuilder builder, ImmutableArray<MethodModel> methods);
         void GenerateConstructorBody(CodeBuilder builder, string classPath);
         void GenerateMethodBody(CodeBuilder builder, MethodModel method);

@@ -11,11 +11,9 @@ namespace PolyBridge.Generator.Generators
 
         public void GenerateFields(CodeBuilder builder, ImmutableArray<MethodModel> methods)
         {
-            builder.AddUsing("System.Runtime.InteropServices");
-
             foreach (var method in methods)
             {
-                builder.AppendLine("[DllImport(\"__Internal\")]");
+                builder.AppendLine("[System.Runtime.InteropServices.DllImport(\"__Internal\")]");
                 builder.AppendLine($"private static extern {method.InnerReturnType} {method.IOSNativeName}({method.ParameterDeclarations});");
             }
         }
@@ -26,11 +24,7 @@ namespace PolyBridge.Generator.Generators
         public void GenerateMethodBody(CodeBuilder builder, MethodModel method)
         {
             var nativeCall = $"{method.IOSNativeName}({method.ParameterNames})";
-            var returnStr = method.HasReturn ? "return " : "";
-
-            builder.AppendLine(method.IsAsync
-                ? $"{returnStr}await Task.Run(() => {nativeCall});"
-                : $"{returnStr}{nativeCall};");
+            builder.AppendLine(method.FormatCall(nativeCall));
         }
     }
 }

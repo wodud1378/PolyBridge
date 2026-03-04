@@ -1,12 +1,9 @@
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
 using PolyBridge.Core.Attributes;
 using PolyBridge.Generator.Builders;
 using PolyBridge.Generator.Generators;
@@ -14,7 +11,9 @@ using PolyBridge.Generator.Models;
 
 namespace PolyBridge.Generator
 {
-    
+    // TODO :
+    // 1. 플랫폼 별 비동기 처리 (스레드 안정성 확보)
+    // 2. 이너 리턴 정상 동작하도록 수정
     [Generator(LanguageNames.CSharp)]
     public class PolyBridgeGenerator : IIncrementalGenerator
     {
@@ -24,14 +23,26 @@ namespace PolyBridge.Generator
             new IOSGenerator()
         };
 
+        private static readonly SymbolDisplayFormat FqFormat = SymbolDisplayFormat.FullyQualifiedFormat;
+
+        private static readonly DiagnosticDescriptor NoMethodsWarning = new(
+            id: "PB0001",
+            title: "No native methods found",
+            messageFormat: "[NativeService] class '{0}' contains no [NativeMethod] methods",
+            category: "PolyBridge",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        private static readonly DiagnosticDescriptor EmptyClassPathWarning = new(
+            id: "PB0002",
+            title: "Empty Android class path",
+            messageFormat: "[NativeService] class '{0}' has no AndroidClassPath; Android bridge will not function",
+            category: "PolyBridge",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var requiredSymbols = context.CompilationProvider.Select((compilation, _) => (
-                ServiceAttr: compilation.GetTypeByMetadataName(typeof(NativeServiceAttribute).FullName!),
-                MethodAttr: compilation.GetTypeByMetadataName(typeof(NativeMethodAttribute).FullName!),
-                TaskType: compilation.GetTypeByMetadataName(typeof(Task).FullName!)
-            ));
-
             var classDeclarations = context.SyntaxProvider.CreateSyntaxProvider(
                 predicate: (node, _) => node is ClassDeclarationSyntax
                 {
@@ -41,133 +52,117 @@ namespace PolyBridge.Generator
             ).Where(m => m != null);
 
             var serviceModels = classDeclarations
-                .Combine(requiredSymbols)
                 .Combine(context.CompilationProvider)
                 .Select((pair, _) =>
                 {
-                    var ((syntax, symbols), compilation) = pair;
-                    return GetServiceModel(syntax, symbols.ServiceAttr, symbols.MethodAttr, symbols.TaskType,
-                        compilation);
+                    var (syntax, compilation) = pair;
+                    return GetServiceModel(syntax, compilation);
                 })
                 .Where(m => m != null);
 
             context.RegisterSourceOutput(serviceModels, GenerateSource);
         }
 
-        private static ServiceModel GetServiceModel(
-            ClassDeclarationSyntax syntax,
-            INamedTypeSymbol serviceAttrSymbol,
-            INamedTypeSymbol methodAttrSymbol,
-            INamedTypeSymbol taskSymbol,
-            Compilation compilation)
+        private static ServiceModel GetServiceModel(ClassDeclarationSyntax syntax, Compilation compilation)
         {
-            if (serviceAttrSymbol == null)
-                return null;
+            var serviceAttrSymbol = compilation.GetTypeByMetadataName(typeof(NativeServiceAttribute).FullName!);
+            if (serviceAttrSymbol == null) return null;
 
             var semanticModel = compilation.GetSemanticModel(syntax.SyntaxTree);
-            if (semanticModel.GetDeclaredSymbol(syntax) is not { } classSymbol)
-                return null;
+            if (semanticModel.GetDeclaredSymbol(syntax) is not { } classSymbol) return null;
 
             var serviceAttr = classSymbol.GetAttributes()
                 .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, serviceAttrSymbol));
+            if (serviceAttr == null) return null;
 
-            if (serviceAttr == null)
-                return null;
+            var methodAttrSymbol = compilation.GetTypeByMetadataName(typeof(NativeMethodAttribute).FullName!);
+            var taskSymbol = compilation.GetTypeByMetadataName(typeof(Task).FullName!);
+            var uniTaskSymbol = compilation.GetTypeByMetadataName("Cysharp.Threading.Tasks.UniTask");
+            var uniTaskGenericSymbol = compilation.GetTypeByMetadataName("Cysharp.Threading.Tasks.UniTask`1");
 
             var classPath = serviceAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
-            var methods = new List<MethodModel>();
-            var symbolComparer = SymbolEqualityComparer.Default;
-            foreach (var methodSymbol in classSymbol.GetMembers().OfType<IMethodSymbol>())
-            {
-                var methodAttr = methodSymbol.GetAttributes()
-                    .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, methodAttrSymbol));
-
-                if (methodAttr == null)
-                    continue;
-
-                var isAsync = symbolComparer.Equals(methodSymbol.ReturnType, taskSymbol) ||
-                              (methodSymbol.ReturnType.BaseType != null &&
-                               symbolComparer.Equals(methodSymbol.ReturnType.BaseType, taskSymbol));
-
-                string innerReturnType;
-                if (isAsync)
-                {
-                    innerReturnType = methodSymbol.ReturnType is INamedTypeSymbol { IsGenericType: true } genericType
-                        ? genericType.TypeArguments[0].ToDisplayString()
-                        : "void";
-                }
-                else
-                {
-                    innerReturnType = methodSymbol.ReturnType.ToDisplayString();
-                }
-
-                var parameters = methodSymbol.Parameters
-                    .Select(p => new ParameterModel(p.Type.ToDisplayString(), p.Name))
-                    .ToImmutableArray();
-
-                var args = methodAttr.ConstructorArguments;
-                var androidName = args.Length > 0 ? args[0].Value?.ToString() ?? methodSymbol.Name : methodSymbol.Name;
-                var iosName = args.Length > 1 ? args[1].Value?.ToString() ?? methodSymbol.Name : methodSymbol.Name;
-                methods.Add(new MethodModel(
-                    methodSymbol.Name,
-                    androidName,
-                    iosName,
-                    methodSymbol.ReturnType.ToDisplayString(),
-                    innerReturnType,
-                    isAsync,
-                    parameters)
-                );
-            }
+            var methods = classSymbol.GetMembers().OfType<IMethodSymbol>()
+                .Select(m => GetMethodModel(m, methodAttrSymbol, taskSymbol, uniTaskSymbol, uniTaskGenericSymbol))
+                .Where(m => m != null)
+                .ToImmutableArray();
 
             return new ServiceModel(
                 classSymbol.Name,
                 classSymbol.ContainingNamespace.ToDisplayString(),
                 classPath,
-                methods.ToImmutableArray()
-            );
+                methods);
+        }
+
+        private static MethodModel GetMethodModel(
+            IMethodSymbol methodSymbol,
+            INamedTypeSymbol methodAttrSymbol,
+            INamedTypeSymbol taskSymbol,
+            INamedTypeSymbol uniTaskSymbol,
+            INamedTypeSymbol uniTaskGenericSymbol)
+        {
+            var methodAttr = methodSymbol.GetAttributes()
+                .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, methodAttrSymbol));
+            if (methodAttr == null) return null;
+
+            var returnType = methodSymbol.ReturnType;
+            var comparer = SymbolEqualityComparer.Default;
+
+            var isTask = comparer.Equals(returnType, taskSymbol) ||
+                         (returnType.BaseType != null && comparer.Equals(returnType.BaseType, taskSymbol));
+
+            var isUniTask = (uniTaskSymbol != null && comparer.Equals(returnType, uniTaskSymbol)) ||
+                            (uniTaskGenericSymbol != null &&
+                             returnType is INamedTypeSymbol { IsGenericType: true } uniTaskGeneric &&
+                             comparer.Equals(uniTaskGeneric.OriginalDefinition, uniTaskGenericSymbol));
+
+            IAsyncType asyncType = isUniTask ? new UniTaskType()
+                                 : isTask ? new TaskType()
+                                 : null;
+
+            var innerReturnType = asyncType != null
+                ? returnType is INamedTypeSymbol { IsGenericType: true } genericType
+                    ? genericType.TypeArguments[0].ToDisplayString(FqFormat)
+                    : "void"
+                : returnType.ToDisplayString(FqFormat);
+
+            var parameters = methodSymbol.Parameters
+                .Select(p => new ParameterModel(p.Type.ToDisplayString(FqFormat), p.Name))
+                .ToImmutableArray();
+
+            var args = methodAttr.ConstructorArguments;
+            string NativeName(int i) => i < args.Length ? args[i].Value?.ToString() ?? methodSymbol.Name : methodSymbol.Name;
+
+            return new MethodModel(
+                methodSymbol.Name,
+                NativeName(0),
+                NativeName(1),
+                returnType.ToDisplayString(FqFormat),
+                innerReturnType,
+                asyncType,
+                parameters);
         }
 
         private static void GenerateSource(SourceProductionContext context, ServiceModel model)
         {
-            var bridgeInterfaceName = $"I{model.ClassName}Bridge";
-
-            GenerateBridgeInterface(context, model, bridgeInterfaceName);
-            GeneratePartialClass(context, model, bridgeInterfaceName);
-
-            foreach (var gen in Generators)
-                GeneratePlatformClass(context, model, bridgeInterfaceName, gen);
-        }
-
-        private static void GenerateBridgeInterface(
-            SourceProductionContext context, ServiceModel model, string bridgeInterfaceName)
-        {
-            var builder = new CodeBuilder();
-            builder.AddUsings(new[] { "System.Threading.Tasks" });
-
-            using (builder.StartNameSpace(model.Namespace))
+            if (model.Methods.IsEmpty)
             {
-                using (builder.StartInterface("internal", bridgeInterfaceName))
-                {
-                    foreach (var method in model.Methods)
-                    {
-                        builder.AppendLine($"{method.ReturnType} {method.Name}({method.ParameterDeclarations});");
-                    }
-                }
+                context.ReportDiagnostic(Diagnostic.Create(NoMethodsWarning, Location.None, model.ClassName));
+                return;
             }
 
-            context.AddSource($"{bridgeInterfaceName}.g.cs",
-                SourceText.From(builder.GenerateFullCode(), Encoding.UTF8));
-        }
+            if (string.IsNullOrEmpty(model.ClassPath))
+                context.ReportDiagnostic(Diagnostic.Create(EmptyClassPathWarning, Location.None, model.ClassName));
 
-        private static void GeneratePartialClass(
-            SourceProductionContext context, ServiceModel model, string bridgeInterfaceName)
-        {
-            var builder = new CodeBuilder();
-            builder.AddUsings(new[] { "System.Threading.Tasks", "PolyBridge.Core" });
+            var bridgeInterfaceName = $"I{model.ClassName}Bridge";
+            var emitter = new SourceEmitter(context, model.Namespace);
 
-            using (builder.StartNameSpace(model.Namespace))
-            {
-                using (builder.StartClass("public partial", model.ClassName))
+            emitter.Emit(bridgeInterfaceName, "internal", isInterface: true, body: builder =>
+                {
+                    foreach (var method in model.Methods)
+                        builder.AppendLine($"{method.ReturnType} {method.Name}({method.ParameterDeclarations});");
+                });
+
+            emitter.Emit(model.ClassName, "public partial", body: builder =>
                 {
                     builder.AppendField("private", true, bridgeInterfaceName, "_impl");
                     builder.AppendLine();
@@ -181,7 +176,6 @@ namespace PolyBridge.Generator
                                 builder.AppendPreprocessorIf(gen.PlatformSymbol);
                             else
                                 builder.AppendPreprocessorElif(gen.PlatformSymbol);
-                            
                             builder.AppendLine($"_impl = new {model.ClassName}{gen.PlatformSuffix}();");
                         }
 
@@ -198,45 +192,27 @@ namespace PolyBridge.Generator
                             builder.AppendLine($"{returnStr}{awaitStr}_impl.{method.Name}({method.ParameterNames});");
                         }
                     }
-                }
-            }
+                });
 
-            context.AddSource($"{model.ClassName}.g.cs", SourceText.From(builder.GenerateFullCode(), Encoding.UTF8));
-        }
-
-        private static void GeneratePlatformClass(
-            SourceProductionContext context, ServiceModel model, string bridgeInterfaceName, IPlatformGenerator gen)
-        {
-            var builder = new CodeBuilder();
-            builder.AddUsings(new[] { "UnityEngine", "System.Threading.Tasks", "PolyBridge.Core" });
-
-            var platformClassName = $"{model.ClassName}{gen.PlatformSuffix}";
-
-            using (builder.StartNameSpace(model.Namespace))
+            foreach (var gen in Generators)
             {
-                using (builder.StartClass("internal", platformClassName, bridgeInterfaceName))
-                {
-                    gen.GenerateFields(builder, model.Methods);
-
-                    builder.AppendLine();
-
-                    using (builder.StartConstructor("internal", platformClassName))
+                var platformClassName = $"{model.ClassName}{gen.PlatformSuffix}";
+                emitter.Emit(platformClassName, "internal", inheritance: bridgeInterfaceName, body: builder =>
                     {
-                        gen.GenerateConstructorBody(builder, model.ClassPath);
-                    }
-
-                    foreach (var method in model.Methods)
-                    {
+                        gen.GenerateFields(builder, model.Methods);
                         builder.AppendLine();
-                        using (builder.StartMethod("public", method.ReturnType, method.Name, method.IsAsync, method.ParameterDeclarations))
-                        {
-                            gen.GenerateMethodBody(builder, method);
-                        }
-                    }
-                }
-            }
 
-            context.AddSource($"{platformClassName}.g.cs", SourceText.From(builder.GenerateFullCode(), Encoding.UTF8));
+                        using (builder.StartConstructor("internal", platformClassName))
+                            gen.GenerateConstructorBody(builder, model.ClassPath);
+
+                        foreach (var method in model.Methods)
+                        {
+                            builder.AppendLine();
+                            using (builder.StartMethod("public", method.ReturnType, method.Name, method.IsAsync, method.ParameterDeclarations))
+                                gen.GenerateMethodBody(builder, method);
+                        }
+                    });
+            }
         }
     }
 }
