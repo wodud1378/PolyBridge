@@ -1,0 +1,17 @@
+{
+  "name": "com.polybridge.core",
+  "version": "0.1.0",
+  "displayName": "PolyBridge",
+  "description": "Source-generated native bridge for Unity (Android/iOS)",
+  "unity": "2021.2",
+  "keywords": [
+    "bridge",
+    "native",
+    "android",
+    "ios",
+    "source-generator"
+  ],
+  "author": {
+    "name": ""
+  }
+}

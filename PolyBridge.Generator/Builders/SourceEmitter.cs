@@ -17,9 +17,13 @@ namespace PolyBridge.Generator.Builders
         }
 
         public void Emit(string name, string modifiers,
-            Action<CodeBuilder> body, bool isInterface = false, string inheritance = null)
+            bool isInterface = false, string inheritance = null,
+            string preprocessorGuard = null, Action<CodeBuilder> body = null)
         {
             var builder = new CodeBuilder();
+
+            if (preprocessorGuard != null)
+                builder.AppendPreprocessorIf(preprocessorGuard);
 
             using (builder.StartNameSpace(_namespace))
             using (isInterface
@@ -28,6 +32,9 @@ namespace PolyBridge.Generator.Builders
             {
                 body(builder);
             }
+
+            if (preprocessorGuard != null)
+                builder.AppendPreprocessorEndif();
 
             _context.AddSource($"{name}.g.cs",
                 SourceText.From(builder.GenerateFullCode(), Encoding.UTF8));

@@ -11,9 +11,6 @@ using PolyBridge.Generator.Models;
 
 namespace PolyBridge.Generator
 {
-    // TODO :
-    // 1. 플랫폼 별 비동기 처리 (스레드 안정성 확보)
-    // 2. 이너 리턴 정상 동작하도록 수정
     [Generator(LanguageNames.CSharp)]
     public class PolyBridgeGenerator : IIncrementalGenerator
     {
@@ -197,7 +194,8 @@ namespace PolyBridge.Generator
             foreach (var gen in Generators)
             {
                 var platformClassName = $"{model.ClassName}{gen.PlatformSuffix}";
-                emitter.Emit(platformClassName, "internal", inheritance: bridgeInterfaceName, body: builder =>
+                emitter.Emit(platformClassName, "internal", inheritance: bridgeInterfaceName,
+                    preprocessorGuard: gen.PlatformSymbol, body: builder =>
                     {
                         gen.GenerateFields(builder, model.Methods);
                         builder.AppendLine();

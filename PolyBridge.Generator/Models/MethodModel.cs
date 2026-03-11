@@ -26,12 +26,18 @@ namespace PolyBridge.Generator.Models
         public bool IsAsync => AsyncType != null;
         public bool IsUniTask => AsyncType is UniTaskType;
 
-        public string FormatCall(string nativeCall)
+        public static string ResultConversion(string resultVar, string targetType)
         {
-            var returnStr = HasReturn ? "return " : "";
-            return IsAsync
-                ? $"{returnStr}await {AsyncType.RunMethod}(() => {nativeCall});"
-                : $"{returnStr}{nativeCall};";
+            switch (targetType)
+            {
+                case "string": return resultVar;
+                case "int": return $"int.Parse({resultVar})";
+                case "bool": return $"bool.Parse({resultVar})";
+                case "float": return $"float.Parse({resultVar})";
+                case "double": return $"double.Parse({resultVar})";
+                case "long": return $"long.Parse({resultVar})";
+                default: return $"UnityEngine.JsonUtility.FromJson<{targetType}>({resultVar})";
+            }
         }
 
         public virtual bool Equals(MethodModel other)

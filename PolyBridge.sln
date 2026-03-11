@@ -1,10 +1,10 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolyBridge.Core", "PolyBridge.Core\PolyBridge.Core.csproj", "{DEB5AFD6-3DE1-4B0A-86C7-0604D22202F9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolyBridge.Generator", "PolyBridge.Generator\PolyBridge.Generator.csproj", "{1FFF3EE2-0C3D-449B-9000-DFEFEA61A4C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolyBridge.Unity", "PolyBridge.Unity\PolyBridge.Unity.csproj", "{1F7DC273-088E-4B12-A3F6-E4ADA9092715}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolyBridge.Editor", "PolyBridge.Editor\PolyBridge.Editor.csproj", "{1F7DC273-088E-4B12-A3F6-E4ADA9092715}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolyBridge.Test", "PolyBridge.Test\PolyBridge.Test.csproj", "{173A16E3-7D4F-4F4E-B70D-A8EA1C47DDB8}"
 EndProject

@@ -1,17 +1,8 @@
 namespace PolyBridge.Generator.Models
 {
-    internal interface IAsyncType
-    {
-        string RunMethod { get; }
-    }
+    internal interface IAsyncType { }
 
-    internal readonly struct TaskType : IAsyncType
-    {
-        public string RunMethod => "System.Threading.Tasks.Task.Run";
-    }
+    internal readonly struct TaskType : IAsyncType { }
 
-    internal readonly struct UniTaskType : IAsyncType
-    {
-        public string RunMethod => "Cysharp.Threading.Tasks.UniTask.RunOnThreadPool";
-    }
+    internal readonly struct UniTaskType : IAsyncType { }
 }
