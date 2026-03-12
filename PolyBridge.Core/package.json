@@ -1,9 +1,9 @@
 {
-  "name": "com.polybridge.core",
-  "version": "0.1.0",
+  "name": "com.wodud1378.polybridge.core",
+  "version": "0.0.1",
   "displayName": "PolyBridge",
   "description": "Source-generated native bridge for Unity (Android/iOS)",
-  "unity": "2021.2",
+  "unity": "2020.3",
   "keywords": [
     "bridge",
     "native",
@@ -12,6 +12,6 @@
     "source-generator"
   ],
   "author": {
-    "name": ""
+    "name": "wodud1378"
   }
 }

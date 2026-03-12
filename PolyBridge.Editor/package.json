@@ -1,0 +1,20 @@
+{
+  "name": "com.wodud1378.polybridge.editor",
+  "version": "0.0.1",
+  "displayName": "PolyBridge Editor",
+  "description": "Editor tools for PolyBridge",
+  "unity": "2020.3",
+  "keywords": [
+    "bridge",
+    "native",
+    "editor",
+    "ios",
+    "source-generator"
+  ],
+  "dependencies": {
+    "com.wodud1378.polybridge.core": "0.0.1"
+  },
+  "author": {
+    "name": "wodud1378"
+  }
+}
