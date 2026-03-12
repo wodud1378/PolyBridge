@@ -11,6 +11,9 @@
     "ios",
     "source-generator"
   ],
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
   "author": {
     "name": "wodud1378"
   }
