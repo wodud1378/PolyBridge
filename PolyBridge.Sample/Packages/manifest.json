@@ -11,6 +11,8 @@
     "com.unity.timeline": "1.8.10",
     "com.unity.ugui": "2.0.0",
     "com.unity.visualscripting": "1.9.7",
+    "com.wodud1378.polybridge.core": "file:../../PolyBridge.Core",
+    "com.wodud1378.polybridge.editor": "file:../../PolyBridge.Editor",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",

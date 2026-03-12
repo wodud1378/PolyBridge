@@ -306,6 +306,20 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.wodud1378.polybridge.core": {
+      "version": "file:../../PolyBridge.Core",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
+    "com.wodud1378.polybridge.editor": {
+      "version": "file:../../PolyBridge.Editor",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.wodud1378.polybridge.core": "0.0.1"
+      }
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,
