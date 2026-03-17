@@ -6,7 +6,7 @@ using AOT;
 
 namespace PolyBridge.Core.Runtime
 {
-    internal static class IOSBridgeCallback
+    public static class IOSBridgeCallback
     {
         public delegate void CallbackDelegate(int requestId, string result, string error);
 

@@ -17,6 +17,7 @@
     <ItemGroup>
         <Compile Include="..\PolyBridge.Core\Attributes\NativeServiceAttribute.cs" Link="Shared\NativeServiceAttribute.cs" />
         <Compile Include="..\PolyBridge.Core\Attributes\NativeMethodAttribute.cs" Link="Shared\NativeMethodAttribute.cs" />
+        <Compile Include="..\PolyBridge.Core\Attributes\PolyBridgeConfigurationAttribute.cs" Link="Shared\PolyBridgeConfigurationAttribute.cs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -87,6 +87,22 @@ namespace PolyBridge.Generator
 
             var classPath = serviceAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
 
+            var configAttrSymbol = compilation.GetTypeByMetadataName(typeof(PolyBridgeConfigurationAttribute).FullName!);
+            var emitPhysicalFiles = false;
+            if (configAttrSymbol != null)
+            {
+                var configAttr = compilation.Assembly.GetAttributes()
+                    .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, configAttrSymbol));
+                if (configAttr != null)
+                {
+                    foreach (var named in configAttr.NamedArguments)
+                    {
+                        if (named.Key == nameof(PolyBridgeConfigurationAttribute.EmitPhysicalFiles))
+                            emitPhysicalFiles = (bool)named.Value.Value!;
+                    }
+                }
+            }
+
             var allMethodsWithAttr = classSymbol.GetMembers().OfType<IMethodSymbol>()
                 .Where(m => m.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, methodAttrSymbol)))
                 .ToImmutableArray();
@@ -108,6 +124,7 @@ namespace PolyBridge.Generator
                     : classSymbol.ContainingNamespace.ToDisplayString(),
                 classPath,
                 syntax.SyntaxTree.FilePath,
+                emitPhysicalFiles,
                 methods,
                 nonPartialMethodNames);
         }
@@ -150,7 +167,11 @@ namespace PolyBridge.Generator
                 .ToImmutableArray();
 
             var args = methodAttr.ConstructorArguments;
-            string NativeName(int i) => i < args.Length ? args[i].Value?.ToString() ?? methodSymbol.Name : methodSymbol.Name;
+            string NativeName(int i) => i < args.Length
+                ? args[i].Value?.ToString() ?? methodSymbol.Name
+                : args.Length > 0
+                    ? args[0].Value?.ToString() ?? methodSymbol.Name
+                    : methodSymbol.Name;
 
             return new MethodModel(
                 methodSymbol.Name,
@@ -177,9 +198,9 @@ namespace PolyBridge.Generator
                 context.ReportDiagnostic(Diagnostic.Create(NotPartialMethodWarning, Location.None, model.ClassName, name));
 
             var implInterfaceName = $"I{model.ClassName}Impl";
-            var outputDir = string.IsNullOrEmpty(model.SourceFilePath)
-                ? null
-                : System.IO.Path.Combine(System.IO.Path.GetDirectoryName(model.SourceFilePath)!, "Generated");
+            string outputDir = null;
+            if (model.EmitPhysicalFiles && !string.IsNullOrEmpty(model.SourceFilePath))
+                outputDir = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(model.SourceFilePath)!, "Generated");
             var emitter = new SourceEmitter(context, model.Namespace, outputDir);
 
             emitter.Emit(implInterfaceName, "internal", isInterface: true, body: builder =>

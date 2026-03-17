@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace PolyBridge.Core.Runtime
 {
-    internal class AndroidBridge
+    public class AndroidBridge
     {
         private readonly AndroidJavaObject _javaObject;
 

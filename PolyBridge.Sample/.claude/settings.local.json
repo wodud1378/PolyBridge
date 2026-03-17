@@ -5,7 +5,24 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(rm:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(gh api:*)",
+      "Bash(find:*)",
+      "Bash(mkdir:*)",
+      "WebSearch",
+      "WebFetch(domain:openupm.com)",
+      "WebFetch(domain:docs.unity3d.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:alanyeats.com)",
+      "Bash(chmod:*)",
+      "Bash(which verdaccio:*)",
+      "Bash(which npm:*)",
+      "Bash(npm install:*)",
+      "Bash(sleep:*)",
+      "Bash(npm root:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }

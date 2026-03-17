@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace PolyBridge.Core.Runtime
 {
-    internal class AndroidBridgeCallback : AndroidJavaProxy
+    public class AndroidBridgeCallback : AndroidJavaProxy
     {
         private readonly Action<string> _onSuccess;
         private readonly Action<string> _onError;

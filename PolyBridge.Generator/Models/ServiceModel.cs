@@ -8,6 +8,7 @@ namespace PolyBridge.Generator.Models
         string Namespace,
         string ClassPath,
         string SourceFilePath,
+        bool EmitPhysicalFiles,
         ImmutableArray<MethodModel> Methods,
         ImmutableArray<string> NonPartialMethodNames)
     {
@@ -15,6 +16,7 @@ namespace PolyBridge.Generator.Models
         public string Namespace { get; } = Namespace;
         public string ClassPath { get; } = ClassPath;
         public string SourceFilePath { get; } = SourceFilePath;
+        public bool EmitPhysicalFiles { get; } = EmitPhysicalFiles;
         public ImmutableArray<MethodModel> Methods { get; } = Methods;
         public ImmutableArray<string> NonPartialMethodNames { get; } = NonPartialMethodNames;
 
@@ -25,10 +27,11 @@ namespace PolyBridge.Generator.Models
                    Namespace == other.Namespace &&
                    ClassPath == other.ClassPath &&
                    SourceFilePath == other.SourceFilePath &&
+                   EmitPhysicalFiles == other.EmitPhysicalFiles &&
                    Methods.SequenceEqual(other.Methods) &&
                    NonPartialMethodNames.SequenceEqual(other.NonPartialMethodNames);
         }
 
-        public override int GetHashCode() => HashHelper.Combine(ClassName, Namespace, ClassPath, SourceFilePath, Methods, NonPartialMethodNames);
+        public override int GetHashCode() => HashHelper.Combine(ClassName, Namespace, ClassPath, SourceFilePath, EmitPhysicalFiles, Methods, NonPartialMethodNames);
     }
 }

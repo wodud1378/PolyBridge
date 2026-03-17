@@ -30,13 +30,26 @@ namespace PolyBridge.Generator.Models
         {
             switch (targetType)
             {
-                case "string": return resultVar;
-                case "int": return $"int.Parse({resultVar})";
-                case "bool": return $"bool.Parse({resultVar})";
-                case "float": return $"float.Parse({resultVar})";
-                case "double": return $"double.Parse({resultVar})";
-                case "long": return $"long.Parse({resultVar})";
-                default: return $"UnityEngine.JsonUtility.FromJson<{targetType}>({resultVar})";
+                case "string":
+                case "global::System.String":
+                    return resultVar;
+                case "int":
+                case "global::System.Int32":
+                    return $"int.Parse({resultVar})";
+                case "bool":
+                case "global::System.Boolean":
+                    return $"bool.Parse({resultVar})";
+                case "float":
+                case "global::System.Single":
+                    return $"float.Parse({resultVar})";
+                case "double":
+                case "global::System.Double":
+                    return $"double.Parse({resultVar})";
+                case "long":
+                case "global::System.Int64":
+                    return $"long.Parse({resultVar})";
+                default:
+                    return $"UnityEngine.JsonUtility.FromJson<{targetType}>({resultVar})";
             }
         }
 

@@ -45,7 +45,7 @@ namespace PolyBridge.Generator.Generators
                 {
                     tcsType = $"Cysharp.Threading.Tasks.UniTaskCompletionSource<{method.InnerReturnType}>";
                     var conversion = MethodModel.ResultConversion("result", method.InnerReturnType);
-                    setResultExpr = $"result => {tcsVar}.TrySetResult({conversion})";
+                    setResultExpr = $"result => {{ try {{ {tcsVar}.TrySetResult({conversion}); }} catch (System.Exception ex) {{ {tcsVar}.TrySetException(ex); }} }}";
                     awaitExpr = $"return await {tcsVar}.Task;";
                 }
                 else
@@ -62,7 +62,7 @@ namespace PolyBridge.Generator.Generators
                 {
                     tcsType = $"System.Threading.Tasks.TaskCompletionSource<{method.InnerReturnType}>";
                     var conversion = MethodModel.ResultConversion("result", method.InnerReturnType);
-                    setResultExpr = $"result => {tcsVar}.TrySetResult({conversion})";
+                    setResultExpr = $"result => {{ try {{ {tcsVar}.TrySetResult({conversion}); }} catch (System.Exception ex) {{ {tcsVar}.TrySetException(ex); }} }}";
                     awaitExpr = $"return await {tcsVar}.Task;";
                 }
                 else
