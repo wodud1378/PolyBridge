@@ -119,9 +119,9 @@ namespace TestApp
 
             Assert.Empty(diagnostics);
 
-            var interfaceSrc = GeneratorTestHelper.FindGeneratedSource(trees, "IMyPluginBridge");
+            var interfaceSrc = GeneratorTestHelper.FindGeneratedSource(trees, "IMyPluginImpl");
             Assert.NotNull(interfaceSrc);
-            Assert.Contains("interface IMyPluginBridge", interfaceSrc);
+            Assert.Contains("interface IMyPluginImpl", interfaceSrc);
             Assert.Contains("void DoSomething()", interfaceSrc);
 
             var partialSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
@@ -137,7 +137,7 @@ namespace TestApp
 
             Assert.Empty(diagnostics);
 
-            var interfaceSrc = GeneratorTestHelper.FindGeneratedSource(trees, "IMyPluginBridge");
+            var interfaceSrc = GeneratorTestHelper.FindGeneratedSource(trees, "IMyPluginImpl");
             Assert.NotNull(interfaceSrc);
             Assert.Contains("int GetValue()", interfaceSrc);
 
@@ -180,13 +180,13 @@ namespace TestApp
             Assert.NotNull(androidSrc);
             Assert.Contains("UNITY_ANDROID", androidSrc);
             Assert.Contains("class MyPluginAndroid", androidSrc);
-            Assert.Contains("IMyPluginBridge", androidSrc);
+            Assert.Contains("IMyPluginImpl", androidSrc);
 
             var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
             Assert.NotNull(iosSrc);
             Assert.Contains("UNITY_IOS", iosSrc);
             Assert.Contains("class MyPluginIOS", iosSrc);
-            Assert.Contains("IMyPluginBridge", iosSrc);
+            Assert.Contains("IMyPluginImpl", iosSrc);
         }
 
         [Fact]
@@ -234,8 +234,8 @@ namespace TestApp
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
             var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
             Assert.NotNull(src);
-            Assert.Contains("DllImport(\"__Internal\")", src);
-            Assert.Contains("static extern void DoSomething()", src);
+            Assert.Contains("DllImport(\"__Internal\"", src);
+            Assert.Contains("static extern void DoSomething_Extern()", src);
         }
 
         [Fact]
@@ -244,7 +244,7 @@ namespace TestApp
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncReturnSource);
             var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
             Assert.NotNull(src);
-            Assert.Contains("static extern int GetValue()", src);
+            Assert.Contains("static extern int GetValue_Extern()", src);
         }
 
         [Fact]
@@ -287,7 +287,7 @@ namespace TestApp
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(WithParametersSource);
 
-            var interfaceSrc = GeneratorTestHelper.FindGeneratedSource(trees, "IMyPluginBridge");
+            var interfaceSrc = GeneratorTestHelper.FindGeneratedSource(trees, "IMyPluginImpl");
             Assert.NotNull(interfaceSrc);
             Assert.Contains("string message", interfaceSrc);
             Assert.Contains("int count", interfaceSrc);
@@ -393,7 +393,7 @@ namespace TestApp
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
             var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
             Assert.NotNull(src);
-            Assert.Contains("private readonly IMyPluginBridge _impl", src);
+            Assert.Contains("private readonly IMyPluginImpl _impl", src);
         }
 
         [Fact]
