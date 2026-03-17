@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using PolyBridge.Core.Attributes;
 using PolyBridge.Generator.Builders;
 using PolyBridge.Generator.Generators;
 using PolyBridge.Generator.Models;
@@ -70,7 +69,7 @@ namespace PolyBridge.Generator
 
         private static ServiceModel GetServiceModel(ClassDeclarationSyntax syntax, Compilation compilation)
         {
-            var serviceAttrSymbol = compilation.GetTypeByMetadataName(typeof(NativeServiceAttribute).FullName!);
+            var serviceAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.NativeServiceAttribute");
             if (serviceAttrSymbol == null) return null;
 
             var semanticModel = compilation.GetSemanticModel(syntax.SyntaxTree);
@@ -80,14 +79,14 @@ namespace PolyBridge.Generator
                 .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, serviceAttrSymbol));
             if (serviceAttr == null) return null;
 
-            var methodAttrSymbol = compilation.GetTypeByMetadataName(typeof(NativeMethodAttribute).FullName!);
+            var methodAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.NativeMethodAttribute");
             var taskSymbol = compilation.GetTypeByMetadataName(typeof(Task).FullName!);
             var uniTaskSymbol = compilation.GetTypeByMetadataName("Cysharp.Threading.Tasks.UniTask");
             var uniTaskGenericSymbol = compilation.GetTypeByMetadataName("Cysharp.Threading.Tasks.UniTask`1");
 
             var classPath = serviceAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
 
-            var configAttrSymbol = compilation.GetTypeByMetadataName(typeof(PolyBridgeConfigurationAttribute).FullName!);
+            var configAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.PolyBridgeConfigurationAttribute");
             var emitPhysicalFiles = false;
             if (configAttrSymbol != null)
             {
@@ -97,7 +96,7 @@ namespace PolyBridge.Generator
                 {
                     foreach (var named in configAttr.NamedArguments)
                     {
-                        if (named.Key == nameof(PolyBridgeConfigurationAttribute.EmitPhysicalFiles))
+                        if (named.Key == "EmitPhysicalFiles")
                             emitPhysicalFiles = (bool)named.Value.Value!;
                     }
                 }
