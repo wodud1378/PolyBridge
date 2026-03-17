@@ -38,6 +38,14 @@ namespace PolyBridge.Generator
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        private static readonly DiagnosticDescriptor NotPartialMethodWarning = new(
+            id: "PB0003",
+            title: "NativeMethod must be partial",
+            messageFormat: "[NativeMethod] method '{0}.{1}' must be declared as a partial method without a body",
+            category: "PolyBridge",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var classDeclarations = context.SyntaxProvider.CreateSyntaxProvider(
@@ -78,16 +86,30 @@ namespace PolyBridge.Generator
             var uniTaskGenericSymbol = compilation.GetTypeByMetadataName("Cysharp.Threading.Tasks.UniTask`1");
 
             var classPath = serviceAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
-            var methods = classSymbol.GetMembers().OfType<IMethodSymbol>()
+
+            var allMethodsWithAttr = classSymbol.GetMembers().OfType<IMethodSymbol>()
+                .Where(m => m.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, methodAttrSymbol)))
+                .ToImmutableArray();
+
+            var methods = allMethodsWithAttr
                 .Select(m => GetMethodModel(m, methodAttrSymbol, taskSymbol, uniTaskSymbol, uniTaskGenericSymbol))
                 .Where(m => m != null)
                 .ToImmutableArray();
 
+            var nonPartialMethodNames = allMethodsWithAttr
+                .Where(m => !m.IsPartialDefinition)
+                .Select(m => m.Name)
+                .ToImmutableArray();
+
             return new ServiceModel(
                 classSymbol.Name,
-                classSymbol.ContainingNamespace.ToDisplayString(),
+                classSymbol.ContainingNamespace.IsGlobalNamespace
+                    ? null
+                    : classSymbol.ContainingNamespace.ToDisplayString(),
                 classPath,
-                methods);
+                syntax.SyntaxTree.FilePath,
+                methods,
+                nonPartialMethodNames);
         }
 
         private static MethodModel GetMethodModel(
@@ -100,6 +122,7 @@ namespace PolyBridge.Generator
             var methodAttr = methodSymbol.GetAttributes()
                 .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, methodAttrSymbol));
             if (methodAttr == null) return null;
+            if (!methodSymbol.IsPartialDefinition) return null;
 
             var returnType = methodSymbol.ReturnType;
             var comparer = SymbolEqualityComparer.Default;
@@ -150,10 +173,16 @@ namespace PolyBridge.Generator
             if (string.IsNullOrEmpty(model.ClassPath))
                 context.ReportDiagnostic(Diagnostic.Create(EmptyClassPathWarning, Location.None, model.ClassName));
 
-            var bridgeInterfaceName = $"I{model.ClassName}Bridge";
-            var emitter = new SourceEmitter(context, model.Namespace);
+            foreach (var name in model.NonPartialMethodNames)
+                context.ReportDiagnostic(Diagnostic.Create(NotPartialMethodWarning, Location.None, model.ClassName, name));
 
-            emitter.Emit(bridgeInterfaceName, "internal", isInterface: true, body: builder =>
+            var implInterfaceName = $"I{model.ClassName}Impl";
+            var outputDir = string.IsNullOrEmpty(model.SourceFilePath)
+                ? null
+                : System.IO.Path.Combine(System.IO.Path.GetDirectoryName(model.SourceFilePath)!, "Generated");
+            var emitter = new SourceEmitter(context, model.Namespace, outputDir);
+
+            emitter.Emit(implInterfaceName, "internal", isInterface: true, body: builder =>
                 {
                     foreach (var method in model.Methods)
                         builder.AppendLine($"{method.ReturnType} {method.Name}({method.ParameterDeclarations});");
@@ -161,7 +190,7 @@ namespace PolyBridge.Generator
 
             emitter.Emit(model.ClassName, "public partial", body: builder =>
                 {
-                    builder.AppendField("private", true, bridgeInterfaceName, "_impl");
+                    builder.AppendField("private", true, implInterfaceName, "_impl");
                     builder.AppendLine();
 
                     using (builder.StartConstructor("public", model.ClassName))
@@ -194,7 +223,7 @@ namespace PolyBridge.Generator
             foreach (var gen in Generators)
             {
                 var platformClassName = $"{model.ClassName}{gen.PlatformSuffix}";
-                emitter.Emit(platformClassName, "internal", inheritance: bridgeInterfaceName,
+                emitter.Emit(platformClassName, "internal", inheritance: implInterfaceName,
                     preprocessorGuard: gen.PlatformSymbol, body: builder =>
                     {
                         gen.GenerateFields(builder, model.Methods);

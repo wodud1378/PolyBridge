@@ -8,6 +8,8 @@ namespace PolyBridge.Core.Attributes
         public string AndroidName { get; }
         public string IOSName { get; }
         
+        public NativeMethodAttribute(string name) : this(name, name) { }
+        
         public NativeMethodAttribute(string androidName = null, string iosName = null)
         {
             AndroidName = androidName;

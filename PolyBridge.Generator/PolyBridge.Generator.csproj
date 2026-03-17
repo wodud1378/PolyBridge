@@ -15,9 +15,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\PolyBridge.Core\PolyBridge.Core.csproj">
-            <PrivateAssets>all</PrivateAssets>
-        </ProjectReference>
+        <Compile Include="..\PolyBridge.Core\Attributes\NativeServiceAttribute.cs" Link="Shared\NativeServiceAttribute.cs" />
+        <Compile Include="..\PolyBridge.Core\Attributes\NativeMethodAttribute.cs" Link="Shared\NativeMethodAttribute.cs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
