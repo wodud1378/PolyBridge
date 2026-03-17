@@ -48,10 +48,10 @@ namespace PolyBridge.Test
         }
 
         [Fact]
-        public void CustomType_ReturnsJsonUtilityFromJson()
+        public void CustomType_ReturnsSerializerDeserialize()
         {
             var result = MethodModel.ResultConversion("result", "MyApp.UserInfo");
-            Assert.Equal("UnityEngine.JsonUtility.FromJson<MyApp.UserInfo>(result)", result);
+            Assert.Equal("PolyBridge.Core.Serialization.PolyBridgeSerializerRegistry.Serializer.Deserialize<MyApp.UserInfo>(result)", result);
         }
 
         [Fact]
@@ -59,6 +59,47 @@ namespace PolyBridge.Test
         {
             var result = MethodModel.ResultConversion("data", "int");
             Assert.Equal("int.Parse(data)", result);
+        }
+
+        // --- ParameterConversion Tests ---
+
+        [Fact]
+        public void ParameterConversion_PrimitiveString_PassThrough()
+        {
+            var result = MethodModel.ParameterConversion("name", "string");
+            Assert.Equal("name", result);
+        }
+
+        [Fact]
+        public void ParameterConversion_PrimitiveInt_PassThrough()
+        {
+            var result = MethodModel.ParameterConversion("count", "int");
+            Assert.Equal("count", result);
+        }
+
+        [Fact]
+        public void ParameterConversion_ComplexType_UsesSerializer()
+        {
+            var result = MethodModel.ParameterConversion("user", "MyApp.UserInfo");
+            Assert.Equal("PolyBridge.Core.Serialization.PolyBridgeSerializerRegistry.Serializer.Serialize(user)", result);
+        }
+
+        [Fact]
+        public void IsPrimitiveType_KnownPrimitives_ReturnsTrue()
+        {
+            Assert.True(MethodModel.IsPrimitiveType("string"));
+            Assert.True(MethodModel.IsPrimitiveType("int"));
+            Assert.True(MethodModel.IsPrimitiveType("bool"));
+            Assert.True(MethodModel.IsPrimitiveType("float"));
+            Assert.True(MethodModel.IsPrimitiveType("double"));
+            Assert.True(MethodModel.IsPrimitiveType("long"));
+        }
+
+        [Fact]
+        public void IsPrimitiveType_CustomType_ReturnsFalse()
+        {
+            Assert.False(MethodModel.IsPrimitiveType("MyApp.UserInfo"));
+            Assert.False(MethodModel.IsPrimitiveType("SomeClass"));
         }
     }
 }

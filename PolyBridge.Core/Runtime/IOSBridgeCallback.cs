@@ -21,6 +21,11 @@ namespace PolyBridge.Core.Runtime
             return id;
         }
 
+        public static bool Unregister(int requestId)
+        {
+            return Pending.TryRemove(requestId, out _);
+        }
+
         [MonoPInvokeCallback(typeof(CallbackDelegate))]
         public static void OnResult(int requestId, string result, string error)
         {

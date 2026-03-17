@@ -45,6 +45,14 @@ namespace PolyBridge.Generator
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
+        private static readonly DiagnosticDescriptor CancellationTokenOnSyncWarning = new(
+            id: "PB0004",
+            title: "CancellationToken on non-async method",
+            messageFormat: "[NativeMethod] method '{0}.{1}' has a CancellationToken parameter but is not async; the token will be ignored",
+            category: "PolyBridge",
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
             var classDeclarations = context.SyntaxProvider.CreateSyntaxProvider(
@@ -83,6 +91,7 @@ namespace PolyBridge.Generator
             var taskSymbol = compilation.GetTypeByMetadataName(typeof(Task).FullName!);
             var uniTaskSymbol = compilation.GetTypeByMetadataName("Cysharp.Threading.Tasks.UniTask");
             var uniTaskGenericSymbol = compilation.GetTypeByMetadataName("Cysharp.Threading.Tasks.UniTask`1");
+            var cancellationTokenSymbol = compilation.GetTypeByMetadataName("System.Threading.CancellationToken");
 
             var classPath = serviceAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
 
@@ -107,7 +116,7 @@ namespace PolyBridge.Generator
                 .ToImmutableArray();
 
             var methods = allMethodsWithAttr
-                .Select(m => GetMethodModel(m, methodAttrSymbol, taskSymbol, uniTaskSymbol, uniTaskGenericSymbol))
+                .Select(m => GetMethodModel(m, methodAttrSymbol, taskSymbol, uniTaskSymbol, uniTaskGenericSymbol, cancellationTokenSymbol))
                 .Where(m => m != null)
                 .ToImmutableArray();
 
@@ -133,7 +142,8 @@ namespace PolyBridge.Generator
             INamedTypeSymbol methodAttrSymbol,
             INamedTypeSymbol taskSymbol,
             INamedTypeSymbol uniTaskSymbol,
-            INamedTypeSymbol uniTaskGenericSymbol)
+            INamedTypeSymbol uniTaskGenericSymbol,
+            INamedTypeSymbol cancellationTokenSymbol)
         {
             var methodAttr = methodSymbol.GetAttributes()
                 .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, methodAttrSymbol));
@@ -161,9 +171,29 @@ namespace PolyBridge.Generator
                     : "void"
                 : returnType.ToDisplayString(FqFormat);
 
-            var parameters = methodSymbol.Parameters
+            var allParameters = methodSymbol.Parameters
                 .Select(p => new ParameterModel(p.Type.ToDisplayString(FqFormat), p.Name))
                 .ToImmutableArray();
+
+            // Separate CancellationToken from native parameters
+            var hasCancellationToken = false;
+            string cancellationTokenName = null;
+            var nativeParametersBuilder = ImmutableArray.CreateBuilder<ParameterModel>();
+
+            foreach (var p in methodSymbol.Parameters)
+            {
+                if (cancellationTokenSymbol != null && comparer.Equals(p.Type, cancellationTokenSymbol))
+                {
+                    hasCancellationToken = true;
+                    cancellationTokenName = p.Name;
+                }
+                else
+                {
+                    nativeParametersBuilder.Add(new ParameterModel(p.Type.ToDisplayString(FqFormat), p.Name));
+                }
+            }
+
+            var nativeParameters = nativeParametersBuilder.ToImmutable();
 
             var args = methodAttr.ConstructorArguments;
             string NativeName(int i) => i < args.Length
@@ -179,7 +209,10 @@ namespace PolyBridge.Generator
                 returnType.ToDisplayString(FqFormat),
                 innerReturnType,
                 asyncType,
-                parameters);
+                allParameters,
+                nativeParameters,
+                hasCancellationToken,
+                cancellationTokenName);
         }
 
         private static void GenerateSource(SourceProductionContext context, ServiceModel model)
@@ -195,6 +228,13 @@ namespace PolyBridge.Generator
 
             foreach (var name in model.NonPartialMethodNames)
                 context.ReportDiagnostic(Diagnostic.Create(NotPartialMethodWarning, Location.None, model.ClassName, name));
+
+            // PB0004: CancellationToken on non-async methods
+            foreach (var method in model.Methods)
+            {
+                if (method.HasCancellationToken && !method.IsAsync)
+                    context.ReportDiagnostic(Diagnostic.Create(CancellationTokenOnSyncWarning, Location.None, model.ClassName, method.Name));
+            }
 
             var implInterfaceName = $"I{model.ClassName}Impl";
             string outputDir = null;

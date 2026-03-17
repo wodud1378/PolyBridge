@@ -431,5 +431,248 @@ namespace TestApp
             Assert.NotNull(src);
             Assert.Contains("id, force, requestId", src);
         }
+
+        // --- CancellationToken Tests ---
+
+        private const string AsyncWithCTSource = @"
+using System.Threading;
+using System.Threading.Tasks;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial Task<string> GetUserAsync(string userId, CancellationToken cancellationToken);
+    }
+}";
+
+        private const string AsyncVoidWithCTSource = @"
+using System.Threading;
+using System.Threading.Tasks;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial Task SendAsync(CancellationToken ct);
+    }
+}";
+
+        private const string SyncWithCTSource = @"
+using System.Threading;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial void DoSomething(string message, CancellationToken cancellationToken);
+    }
+}";
+
+        [Fact]
+        public void CT_DetectedInMethodSignature()
+        {
+            var (trees, diagnostics) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
+            Assert.Empty(diagnostics);
+
+            // CT should be in the method signature (ParameterDeclarations)
+            var partialSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
+            Assert.NotNull(partialSrc);
+            Assert.Contains("CancellationToken cancellationToken", partialSrc);
+        }
+
+        [Fact]
+        public void CT_ExcludedFromNativeCall_Android()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(src);
+            // Native call should have userId but NOT cancellationToken
+            Assert.Contains("userId, callback", src);
+            Assert.DoesNotContain("cancellationToken, callback", src);
+        }
+
+        [Fact]
+        public void CT_RegistersTrySetCanceled_Android()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(src);
+            Assert.Contains("cancellationToken.Register", src);
+            Assert.Contains("TrySetCanceled", src);
+            Assert.Contains("ctr.Dispose()", src);
+        }
+
+        [Fact]
+        public void CT_TryFinally_Android()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(src);
+            Assert.Contains("try {", src);
+            Assert.Contains("finally {", src);
+        }
+
+        [Fact]
+        public void CT_ExcludedFromExtern_IOS()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            Assert.NotNull(src);
+            // Extern declaration should have userId, requestId, callback but NOT cancellationToken
+            Assert.Contains("string userId, int requestId", src);
+            // The extern line should not include cancellationToken
+            Assert.DoesNotContain("CancellationToken cancellationToken, int requestId", src);
+        }
+
+        [Fact]
+        public void CT_RegistersUnregisterAndTrySetCanceled_IOS()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            Assert.NotNull(src);
+            Assert.Contains("cancellationToken.Register", src);
+            Assert.Contains("IOSBridgeCallback.Unregister(requestId)", src);
+            Assert.Contains("TrySetCanceled", src);
+            Assert.Contains("ctr.Dispose()", src);
+        }
+
+        [Fact]
+        public void CT_VoidAsync_Works()
+        {
+            var (trees, diagnostics) = GeneratorTestHelper.RunGenerator(AsyncVoidWithCTSource);
+            Assert.Empty(diagnostics);
+
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(androidSrc);
+            Assert.Contains("ct.Register", androidSrc);
+            // No native params, so callback comes directly
+            Assert.Contains("_bridge.Call(\"SendAsync\", callback)", androidSrc);
+        }
+
+        [Fact]
+        public void CT_OnSyncMethod_ReportsPB0004()
+        {
+            var (_, diagnostics) = GeneratorTestHelper.RunGenerator(SyncWithCTSource);
+            Assert.Contains(diagnostics, d => d.Id == "PB0004");
+        }
+
+        [Fact]
+        public void CT_OnSyncMethod_CTExcludedFromNativeCall()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(SyncWithCTSource);
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(androidSrc);
+            // Native call should only contain message, not cancellationToken
+            Assert.Contains("\"DoSomething\", message", androidSrc);
+            // cancellationToken should not appear in the bridge Call (but it will appear in the method signature)
+            Assert.DoesNotContain("\"DoSomething\", message, cancellationToken", androidSrc);
+        }
+
+        // --- Custom Serialization Tests ---
+
+        private const string ComplexReturnTypeSource = @"
+using System.Threading.Tasks;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    public class UserInfo { public string Name; }
+
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial Task<UserInfo> GetUserAsync();
+    }
+}";
+
+        private const string ComplexParameterSource = @"
+using System.Threading.Tasks;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    public class UserData { public string Name; }
+
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial void SaveUser(UserData data);
+
+        [NativeMethod]
+        public partial Task SendDataAsync(string id, UserData data);
+    }
+}";
+
+        [Fact]
+        public void Serialization_ComplexReturn_UsesSerializerRegistry()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(ComplexReturnTypeSource);
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(androidSrc);
+            Assert.Contains("PolyBridgeSerializerRegistry.Serializer.Deserialize<", androidSrc);
+            Assert.DoesNotContain("JsonUtility", androidSrc);
+        }
+
+        [Fact]
+        public void Serialization_PrimitiveReturn_NoSerializerCall()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncTaskReturnSource);
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(androidSrc);
+            // string return should just pass through, no serializer call
+            Assert.Contains("TrySetResult(result)", androidSrc);
+            Assert.DoesNotContain("PolyBridgeSerializerRegistry", androidSrc);
+        }
+
+        [Fact]
+        public void Serialization_ComplexParam_UsesSerializerSerialize_Android()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(ComplexParameterSource);
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(androidSrc);
+            Assert.Contains("PolyBridgeSerializerRegistry.Serializer.Serialize(data)", androidSrc);
+        }
+
+        [Fact]
+        public void Serialization_ComplexParam_UsesSerializerSerialize_IOS()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(ComplexParameterSource);
+            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            Assert.NotNull(iosSrc);
+            Assert.Contains("PolyBridgeSerializerRegistry.Serializer.Serialize(data)", iosSrc);
+        }
+
+        [Fact]
+        public void Serialization_ComplexParam_IOSExtern_UsesStringType()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(ComplexParameterSource);
+            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            Assert.NotNull(iosSrc);
+            // The extern for SaveUser should have "string data" instead of "UserData data"
+            Assert.Contains("string data", iosSrc);
+        }
+
+        [Fact]
+        public void Serialization_PrimitiveParam_PassedDirectly()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(WithParametersSource);
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            Assert.NotNull(androidSrc);
+            // Primitive params should be passed directly, not serialized
+            Assert.DoesNotContain("Serialize(message)", androidSrc);
+            Assert.DoesNotContain("Serialize(count)", androidSrc);
+        }
     }
 }

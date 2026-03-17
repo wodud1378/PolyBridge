@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Linq;
 using PolyBridge.Generator.Builders;
 using PolyBridge.Generator.Models;
 
@@ -19,16 +20,21 @@ namespace PolyBridge.Generator.Generators
 
                 if (method.IsAsync)
                 {
-                    var userParams = method.ParameterDeclarations;
+                    // Extern declarations use native parameters only (no CT), with complex types as string
+                    var nativeExternParams = string.Join(", ", method.NativeParameters.Select(p =>
+                        MethodModel.IsPrimitiveType(p.Type) ? $"{p.Type} {p.Name}" : $"string {p.Name}"));
                     var extraParams = "int requestId, PolyBridge.Core.Runtime.IOSBridgeCallback.CallbackDelegate callback";
-                    var allParams = string.IsNullOrEmpty(userParams) ? extraParams : $"{userParams}, {extraParams}";
+                    var allParams = string.IsNullOrEmpty(nativeExternParams) ? extraParams : $"{nativeExternParams}, {extraParams}";
                     builder.AppendLine($"[System.Runtime.InteropServices.DllImport(\"__Internal\", EntryPoint = \"{method.IOSNativeName}\")]");
                     builder.AppendLine($"private static extern void {externName}({allParams});");
                 }
                 else
                 {
+                    // Sync extern: native parameters only, complex types as string
+                    var nativeExternParams = string.Join(", ", method.NativeParameters.Select(p =>
+                        MethodModel.IsPrimitiveType(p.Type) ? $"{p.Type} {p.Name}" : $"string {p.Name}"));
                     builder.AppendLine($"[System.Runtime.InteropServices.DllImport(\"__Internal\", EntryPoint = \"{method.IOSNativeName}\")]");
-                    builder.AppendLine($"private static extern {method.InnerReturnType} {externName}({method.ParameterDeclarations});");
+                    builder.AppendLine($"private static extern {method.InnerReturnType} {externName}({nativeExternParams});");
                 }
             }
         }
@@ -46,14 +52,15 @@ namespace PolyBridge.Generator.Generators
 
         private static void GenerateSyncBody(CodeBuilder builder, MethodModel method)
         {
-            var nativeCall = $"{ExternName(method)}({method.ParameterNames})";
+            var nativeCall = $"{ExternName(method)}({method.NativeParameterExpressions})";
             var returnStr = method.HasReturn ? "return " : "";
             builder.AppendLine($"{returnStr}{nativeCall};");
         }
 
         private static void GenerateAsyncBody(CodeBuilder builder, MethodModel method)
         {
-            var paramArgs = !method.Parameters.IsEmpty ? $"{method.ParameterNames}, " : "";
+            var nativeParamExprs = method.NativeParameterExpressions;
+            var paramArgs = !string.IsNullOrEmpty(nativeParamExprs) ? $"{nativeParamExprs}, " : "";
 
             string tcsType, tcsVar, setResultExpr, awaitExpr;
 
@@ -96,8 +103,24 @@ namespace PolyBridge.Generator.Generators
             builder.AppendLine($"var requestId = PolyBridge.Core.Runtime.IOSBridgeCallback.Register(");
             builder.AppendLine($"    {setResultExpr},");
             builder.AppendLine($"    error => {tcsVar}.TrySetException(new System.Exception(error)));");
+
+            if (method.HasCancellationToken)
+            {
+                var ctName = method.CancellationTokenParameterName;
+                builder.AppendLine($"var ctr = {ctName}.Register(() => {{ PolyBridge.Core.Runtime.IOSBridgeCallback.Unregister(requestId); {tcsVar}.TrySetCanceled({ctName}); }});");
+            }
+
             builder.AppendLine($"{ExternName(method)}({paramArgs}requestId, PolyBridge.Core.Runtime.IOSBridgeCallback.OnResult);");
-            builder.AppendLine(awaitExpr);
+
+            if (method.HasCancellationToken)
+            {
+                builder.AppendLine($"try {{ {awaitExpr} }}");
+                builder.AppendLine("finally { ctr.Dispose(); }");
+            }
+            else
+            {
+                builder.AppendLine(awaitExpr);
+            }
         }
     }
 }

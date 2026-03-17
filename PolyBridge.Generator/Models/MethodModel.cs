@@ -10,7 +10,10 @@ namespace PolyBridge.Generator.Models
         string ReturnType,
         string InnerReturnType,
         IAsyncType AsyncType,
-        ImmutableArray<ParameterModel> Parameters)
+        ImmutableArray<ParameterModel> AllParameters,
+        ImmutableArray<ParameterModel> NativeParameters,
+        bool HasCancellationToken,
+        string CancellationTokenParameterName)
     {
         public string Name { get; } = Name;
         public string AndroidNativeName { get; } = AndroidNativeName;
@@ -18,13 +21,31 @@ namespace PolyBridge.Generator.Models
         public string ReturnType { get; } = ReturnType;
         public string InnerReturnType { get; } = InnerReturnType;
         public IAsyncType AsyncType { get; } = AsyncType;
-        public ImmutableArray<ParameterModel> Parameters { get; } = Parameters;
+        public ImmutableArray<ParameterModel> AllParameters { get; } = AllParameters;
+        public ImmutableArray<ParameterModel> NativeParameters { get; } = NativeParameters;
+        public bool HasCancellationToken { get; } = HasCancellationToken;
+        public string CancellationTokenParameterName { get; } = CancellationTokenParameterName;
 
-        public string ParameterDeclarations => string.Join(", ", Parameters.Select(p => $"{p.Type} {p.Name}"));
-        public string ParameterNames => string.Join(", ", Parameters.Select(p => p.Name));
+        // For backward compat: Parameters = AllParameters
+        public ImmutableArray<ParameterModel> Parameters => AllParameters;
+
+        public string ParameterDeclarations => string.Join(", ", AllParameters.Select(p => $"{p.Type} {p.Name}"));
+        public string ParameterNames => string.Join(", ", AllParameters.Select(p => p.Name));
+        public string NativeParameterNames => string.Join(", ", NativeParameters.Select(p => p.Name));
+        public string NativeParameterExpressions => string.Join(", ", NativeParameters.Select(p => ParameterConversion(p.Name, p.Type)));
         public bool HasReturn => InnerReturnType != "void";
         public bool IsAsync => AsyncType != null;
         public bool IsUniTask => AsyncType is UniTaskType;
+
+        private static readonly string[] PrimitiveTypes =
+        {
+            "string", "global::System.String",
+            "int", "global::System.Int32",
+            "bool", "global::System.Boolean",
+            "float", "global::System.Single",
+            "double", "global::System.Double",
+            "long", "global::System.Int64"
+        };
 
         public static string ResultConversion(string resultVar, string targetType)
         {
@@ -49,8 +70,24 @@ namespace PolyBridge.Generator.Models
                 case "global::System.Int64":
                     return $"long.Parse({resultVar})";
                 default:
-                    return $"UnityEngine.JsonUtility.FromJson<{targetType}>({resultVar})";
+                    return $"PolyBridge.Core.Serialization.PolyBridgeSerializerRegistry.Serializer.Deserialize<{targetType}>({resultVar})";
             }
+        }
+
+        public static string ParameterConversion(string paramName, string paramType)
+        {
+            if (IsPrimitiveType(paramType))
+                return paramName;
+            return $"PolyBridge.Core.Serialization.PolyBridgeSerializerRegistry.Serializer.Serialize({paramName})";
+        }
+
+        public static bool IsPrimitiveType(string type)
+        {
+            foreach (var t in PrimitiveTypes)
+            {
+                if (t == type) return true;
+            }
+            return false;
         }
 
         public virtual bool Equals(MethodModel other)
@@ -62,9 +99,12 @@ namespace PolyBridge.Generator.Models
                    ReturnType == other.ReturnType &&
                    InnerReturnType == other.InnerReturnType &&
                    Equals(AsyncType, other.AsyncType) &&
-                   Parameters.SequenceEqual(other.Parameters);
+                   AllParameters.SequenceEqual(other.AllParameters) &&
+                   NativeParameters.SequenceEqual(other.NativeParameters) &&
+                   HasCancellationToken == other.HasCancellationToken &&
+                   CancellationTokenParameterName == other.CancellationTokenParameterName;
         }
 
-        public override int GetHashCode() => HashHelper.Combine(Name, AndroidNativeName, IOSNativeName, ReturnType, InnerReturnType, AsyncType, Parameters);
+        public override int GetHashCode() => HashHelper.Combine(Name, AndroidNativeName, IOSNativeName, ReturnType, InnerReturnType, AsyncType, AllParameters, NativeParameters, HasCancellationToken, CancellationTokenParameterName);
     }
 }

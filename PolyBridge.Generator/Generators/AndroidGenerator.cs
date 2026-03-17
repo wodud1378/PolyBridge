@@ -25,7 +25,8 @@ namespace PolyBridge.Generator.Generators
 
         private static void GenerateSyncBody(CodeBuilder builder, MethodModel method)
         {
-            var paramArgs = !method.Parameters.IsEmpty ? $", {method.ParameterNames}" : "";
+            var nativeParamExprs = method.NativeParameterExpressions;
+            var paramArgs = !string.IsNullOrEmpty(nativeParamExprs) ? $", {nativeParamExprs}" : "";
             var callMethod = method.HasReturn ? $"Call<{method.InnerReturnType}>" : "Call";
             var nativeCall = $"_bridge.{callMethod}(\"{method.AndroidNativeName}\"{paramArgs})";
             var returnStr = method.HasReturn ? "return " : "";
@@ -34,7 +35,8 @@ namespace PolyBridge.Generator.Generators
 
         private static void GenerateAsyncBody(CodeBuilder builder, MethodModel method)
         {
-            var paramArgs = !method.Parameters.IsEmpty ? $"{method.ParameterNames}, " : "";
+            var nativeParamExprs = method.NativeParameterExpressions;
+            var paramArgs = !string.IsNullOrEmpty(nativeParamExprs) ? $"{nativeParamExprs}, " : "";
 
             string tcsType, tcsVar, setResultExpr, awaitExpr;
 
@@ -77,8 +79,24 @@ namespace PolyBridge.Generator.Generators
             builder.AppendLine($"var callback = new PolyBridge.Core.Runtime.AndroidBridgeCallback(");
             builder.AppendLine($"    {setResultExpr},");
             builder.AppendLine($"    error => {tcsVar}.TrySetException(new System.Exception(error)));");
+
+            if (method.HasCancellationToken)
+            {
+                var ctName = method.CancellationTokenParameterName;
+                builder.AppendLine($"var ctr = {ctName}.Register(() => {tcsVar}.TrySetCanceled({ctName}));");
+            }
+
             builder.AppendLine($"_bridge.Call(\"{method.AndroidNativeName}\", {paramArgs}callback);");
-            builder.AppendLine(awaitExpr);
+
+            if (method.HasCancellationToken)
+            {
+                builder.AppendLine($"try {{ {awaitExpr} }}");
+                builder.AppendLine("finally { ctr.Dispose(); }");
+            }
+            else
+            {
+                builder.AppendLine(awaitExpr);
+            }
         }
     }
 }
