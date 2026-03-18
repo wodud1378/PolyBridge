@@ -111,13 +111,35 @@ namespace PolyBridge.Generator
                 }
             }
 
+            var mockImplAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.MockImplAttribute");
+            var mockReturnValueAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.MockReturnAttribute");
+
             var allMethodsWithAttr = classSymbol.GetMembers().OfType<IMethodSymbol>()
                 .Where(m => m.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, methodAttrSymbol)))
                 .ToImmutableArray();
 
+            // Build mock method mapping: targetMethodName → mockMethodName
+            var mockMapping = new System.Collections.Generic.Dictionary<string, string>();
+            foreach (var member in classSymbol.GetMembers().OfType<IMethodSymbol>())
+            {
+                foreach (var attr in member.GetAttributes())
+                {
+                    if ((mockImplAttrSymbol != null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mockImplAttrSymbol)) ||
+                        (mockReturnValueAttrSymbol != null && SymbolEqualityComparer.Default.Equals(attr.AttributeClass, mockReturnValueAttrSymbol)))
+                    {
+                        var targetName = attr.ConstructorArguments.FirstOrDefault().Value?.ToString();
+                        if (targetName != null)
+                            mockMapping[targetName] = member.Name;
+                    }
+                }
+            }
+
             var methods = allMethodsWithAttr
                 .Select(m => GetMethodModel(m, methodAttrSymbol, taskSymbol, uniTaskSymbol, uniTaskGenericSymbol, cancellationTokenSymbol))
                 .Where(m => m != null)
+                .Select(m => mockMapping.TryGetValue(m.Name, out var mockName)
+                    ? new MethodModel(m.Name, m.AndroidNativeName, m.IOSNativeName, m.ReturnType, m.InnerReturnType, m.AsyncType, m.AllParameters, m.NativeParameters, m.HasCancellationToken, m.CancellationTokenParameterName, mockName)
+                    : m)
                 .ToImmutableArray();
 
             var nonPartialMethodNames = allMethodsWithAttr
@@ -255,13 +277,13 @@ namespace PolyBridge.Generator
 
                     using (builder.StartConstructor("public", model.ClassName))
                     {
+                        builder.AppendPreprocessorIf("UNITY_EDITOR");
+                        builder.AppendLine($"_impl = new {model.ClassName}EditorImpl(this);");
+
                         for (var i = 0; i < Generators.Length; i++)
                         {
                             var gen = Generators[i];
-                            if (i == 0)
-                                builder.AppendPreprocessorIf(gen.PlatformSymbol);
-                            else
-                                builder.AppendPreprocessorElif(gen.PlatformSymbol);
+                            builder.AppendPreprocessorElif(gen.PlatformSymbol);
                             builder.AppendLine($"_impl = new {model.ClassName}{gen.PlatformSuffix}();");
                         }
 
@@ -279,6 +301,8 @@ namespace PolyBridge.Generator
                         }
                     }
                 });
+
+            EditorImplGenerator.Generate(emitter, model.ClassName, implInterfaceName, model.Methods);
 
             foreach (var gen in Generators)
             {

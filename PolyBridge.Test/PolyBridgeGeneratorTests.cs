@@ -303,7 +303,9 @@ namespace TestApp
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
             var partialSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
             Assert.NotNull(partialSrc);
-            Assert.Contains("#if UNITY_ANDROID", partialSrc);
+            Assert.Contains("#if UNITY_EDITOR", partialSrc);
+            Assert.Contains("new MyPluginEditorImpl(this)", partialSrc);
+            Assert.Contains("#elif UNITY_ANDROID", partialSrc);
             Assert.Contains("#elif UNITY_IOS", partialSrc);
             Assert.Contains("#endif", partialSrc);
             Assert.Contains("new MyPluginAndroid()", partialSrc);
@@ -674,5 +676,135 @@ namespace TestApp
             Assert.DoesNotContain("Serialize(message)", androidSrc);
             Assert.DoesNotContain("Serialize(count)", androidSrc);
         }
+
+        // --- EditorImpl Tests ---
+
+        private const string MockImplSource = @"
+using System.Threading.Tasks;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial void DoSomething();
+
+        [NativeMethod]
+        public partial Task<int> GetValueAsync();
+
+        [MockImpl(nameof(DoSomething))]
+        internal void MockImplDoSomething() { }
+
+        [MockReturn(nameof(GetValueAsync))]
+        internal Task<int> MockReturnGetValueAsync() => Task.FromResult(42);
+    }
+}";
+
+        private const string NoMockSource = @"
+using System.Threading.Tasks;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial void Fire();
+
+        [NativeMethod]
+        public partial string GetName();
+
+        [NativeMethod]
+        public partial Task SendAsync();
+
+        [NativeMethod]
+        public partial Task<int> GetCountAsync();
+    }
+}";
+
+        [Fact]
+        public void EditorImpl_ClassGenerated()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
+            Assert.NotNull(src);
+            Assert.Contains("UNITY_EDITOR", src);
+            Assert.Contains("class MyPluginEditorImpl", src);
+            Assert.Contains("IMyPluginImpl", src);
+        }
+
+        [Fact]
+        public void EditorImpl_HasOwnerField()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
+            Assert.NotNull(src);
+            Assert.Contains("private readonly MyPlugin _owner", src);
+            Assert.Contains("MyPlugin owner", src);
+            Assert.Contains("_owner = owner", src);
+        }
+
+        [Fact]
+        public void EditorImpl_MockImpl_CallsOwnerMethod()
+        {
+            var (trees, diagnostics) = GeneratorTestHelper.RunGenerator(MockImplSource);
+            Assert.Empty(diagnostics);
+
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
+            Assert.NotNull(src);
+            Assert.Contains("_owner.MockImplDoSomething()", src);
+        }
+
+        [Fact]
+        public void EditorImpl_MockReturn_CallsOwnerMethod()
+        {
+            var (trees, diagnostics) = GeneratorTestHelper.RunGenerator(MockImplSource);
+            Assert.Empty(diagnostics);
+
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
+            Assert.NotNull(src);
+            Assert.Contains("return _owner.MockReturnGetValueAsync()", src);
+        }
+
+        [Fact]
+        public void EditorImpl_NoMock_VoidFallback()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(NoMockSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
+            Assert.NotNull(src);
+            // void method with no mock → empty body (no return statement needed)
+            Assert.Contains("void Fire()", src);
+        }
+
+        [Fact]
+        public void EditorImpl_NoMock_SyncReturnFallback()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(NoMockSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
+            Assert.NotNull(src);
+            Assert.Contains("return default", src);
+        }
+
+        [Fact]
+        public void EditorImpl_NoMock_TaskVoidFallback()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(NoMockSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
+            Assert.NotNull(src);
+            Assert.Contains("Task.CompletedTask", src);
+        }
+
+        [Fact]
+        public void EditorImpl_NoMock_TaskTFallback()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(NoMockSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
+            Assert.NotNull(src);
+            Assert.Contains("Task.FromResult<", src);
+        }
     }
 }
+

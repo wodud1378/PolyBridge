@@ -13,7 +13,8 @@ namespace PolyBridge.Generator.Models
         ImmutableArray<ParameterModel> AllParameters,
         ImmutableArray<ParameterModel> NativeParameters,
         bool HasCancellationToken,
-        string CancellationTokenParameterName)
+        string CancellationTokenParameterName,
+        string MockMethodName = null)
     {
         public string Name { get; } = Name;
         public string AndroidNativeName { get; } = AndroidNativeName;
@@ -25,6 +26,7 @@ namespace PolyBridge.Generator.Models
         public ImmutableArray<ParameterModel> NativeParameters { get; } = NativeParameters;
         public bool HasCancellationToken { get; } = HasCancellationToken;
         public string CancellationTokenParameterName { get; } = CancellationTokenParameterName;
+        public string MockMethodName { get; } = MockMethodName;
 
         // For backward compat: Parameters = AllParameters
         public ImmutableArray<ParameterModel> Parameters => AllParameters;
@@ -102,9 +104,10 @@ namespace PolyBridge.Generator.Models
                    AllParameters.SequenceEqual(other.AllParameters) &&
                    NativeParameters.SequenceEqual(other.NativeParameters) &&
                    HasCancellationToken == other.HasCancellationToken &&
-                   CancellationTokenParameterName == other.CancellationTokenParameterName;
+                   CancellationTokenParameterName == other.CancellationTokenParameterName &&
+                   MockMethodName == other.MockMethodName;
         }
 
-        public override int GetHashCode() => HashHelper.Combine(Name, AndroidNativeName, IOSNativeName, ReturnType, InnerReturnType, AsyncType, AllParameters, NativeParameters, HasCancellationToken, CancellationTokenParameterName);
+        public override int GetHashCode() => HashHelper.Combine(Name, AndroidNativeName, IOSNativeName, ReturnType, InnerReturnType, AsyncType, AllParameters, NativeParameters, HasCancellationToken, CancellationTokenParameterName, MockMethodName);
     }
 }
