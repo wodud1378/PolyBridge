@@ -6,7 +6,7 @@ Roslyn `IIncrementalGenerator` 기반 소스 제너레이터. `[NativeService]` 
 
 ```
 Models/       데이터 모델 (ServiceModel, MethodModel, ParameterModel, IAsyncType)
-Generators/   플랫폼별 코드 생성기 (AndroidGenerator, IOSGenerator)
+Generators/   플랫폼별 코드 생성기 (AndroidGenerator, IOSGenerator, EditorImplGenerator)
 Builders/     코드 빌더 유틸리티 (CodeBuilder, SourceEmitter)
 ```
 
@@ -14,9 +14,10 @@ Builders/     코드 빌더 유틸리티 (CodeBuilder, SourceEmitter)
 
 1. `[NativeService]` + `partial class` 구문 감지
 2. `ServiceModel` / `MethodModel` 추출
-3. 서비스당 4개 파일 생성:
+3. 서비스당 5개 파일 생성:
    - `I{Name}Impl` — 인터페이스
    - `{Name}.g.cs` — partial 클래스 (플랫폼 분기 + 위임)
+   - `{Name}EditorImpl` — 에디터 구현 (`#if UNITY_EDITOR`)
    - `{Name}Android` — Android 구현 (`#if UNITY_ANDROID`)
    - `{Name}IOS` — iOS 구현 (`#if UNITY_IOS`)
 
@@ -28,6 +29,7 @@ Builders/     코드 빌더 유틸리티 (CodeBuilder, SourceEmitter)
 | `NativeParameters` | CT 제외 파라미터 (네이티브 호출용) |
 | `NativeParameterExpressions` | 복합 타입에 `Serialize()` 적용된 인자 목록 |
 | `HasCancellationToken` | CT 파라미터 존재 여부 |
+| `MockMethodName` | Mock 어트리뷰트로 지정된 메서드명 (없으면 null) |
 | `ResultConversion()` | 반환 타입 변환 (기본 타입: Parse, 복합 타입: Deserialize) |
 | `ParameterConversion()` | 파라미터 변환 (기본 타입: 직접 전달, 복합 타입: Serialize) |
 
@@ -57,6 +59,28 @@ private static extern void SaveUser_Extern(string data, int requestId, CallbackD
 SaveUser_Extern(PolyBridgeSerializerRegistry.Serializer.Serialize(data), requestId, IOSBridgeCallback.OnResult);
 ```
 
+## EditorImpl 생성
+
+`EditorImplGenerator`는 에디터 전용 구현 클래스를 생성. `IPlatformGenerator`를 구현하지 않으며 별도 로직으로 동작.
+
+- `[MockImpl]` / `[MockReturn]` 어트리뷰트가 있는 메서드 → `_owner.MockMethod()` 호출
+- Mock 어트리뷰트가 없는 메서드 → `default` 폴백 (`Task`는 `Task.CompletedTask`, `Task<T>`는 `Task.FromResult<T>(default)`)
+
+```csharp
+// 생성 예시
+#if UNITY_EDITOR
+internal class MyPluginEditorImpl : IMyPluginImpl
+{
+    private readonly MyPlugin _owner;
+    internal MyPluginEditorImpl(MyPlugin owner) => _owner = owner;
+
+    public void DoSomething() => _owner.MockImplDoSomething();
+    public Task<int> GetValueAsync() => _owner.MockReturnGetValueAsync();
+    public string GetName() => default;
+}
+#endif
+```
+
 ## 플랫폼 생성기 확장
 
-`IPlatformGenerator`구현체를 `PolyBridgeGenerator.Generators` 배열에 추가 시 새 플랫폼 지원 가능하며, 현재는 Android, iOS만 지원.
+`IPlatformGenerator` 구현체를 `PolyBridgeGenerator.Generators` 배열에 추가 시 새 플랫폼 지원 가능. 현재는 Android, iOS만 지원.

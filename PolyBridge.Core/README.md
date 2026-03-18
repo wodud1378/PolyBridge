@@ -5,7 +5,7 @@ Unity 런타임에서 사용되는 핵심 라이브러리. 어트리뷰트, 네�
 ## 디렉토리
 
 ```
-Attributes/       어트리뷰트 ([NativeService], [NativeMethod], [PolyBridgeConfiguration])
+Attributes/       어트리뷰트 ([NativeService], [NativeMethod], [MockImpl], [MockReturn], [PolyBridgeConfiguration])
 Runtime/          네이티브 콜백 처리 (AndroidBridge, AndroidBridgeCallback, IOSBridgeCallback, NativeDispatcher)
 Serialization/    직렬화 인터페이스 및 레지스트리
 ```
@@ -31,6 +31,22 @@ public partial void Ping();
 
 [NativeMethod("android_fetch", "ios_fetch")]
 public partial Task<string> FetchAsync();
+```
+
+### MockImpl / MockReturn
+
+에디터 환경에서 네이티브 호출 대신 사용할 Mock 메서드를 지정.
+
+- `[MockImpl]` — void 메서드용. EditorImpl에서 해당 메서드를 호출.
+- `[MockReturn]` — 반환값이 있는 메서드용. EditorImpl에서 반환값을 사용.
+- Mock 어트리뷰트가 없는 메서드는 `default` 값으로 폴백.
+
+```csharp
+[MockImpl(nameof(DoSomething))]
+internal void MockImplDoSomething() { }
+
+[MockReturn(nameof(GetValueAsync))]
+internal Task<int> MockReturnGetValueAsync() => Task.FromResult(42);
 ```
 
 ### PolyBridgeConfiguration
