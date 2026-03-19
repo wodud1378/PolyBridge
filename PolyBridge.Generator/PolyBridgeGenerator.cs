@@ -374,9 +374,6 @@ namespace PolyBridge.Generator
 
             foreach (var gen in Generators)
             {
-                if (gen is AndroidGenerator androidGen)
-                    androidGen.SetCurrentModel(model);
-
                 var platformClassName = $"{model.ClassName}{gen.PlatformSuffix}";
                 emitter.Emit(platformClassName, "internal", inheritance: implInterfaceName,
                     preprocessorGuard: gen.PlatformSymbol, body: builder =>
@@ -405,7 +402,7 @@ namespace PolyBridge.Generator
                         {
                             builder.AppendLine();
                             using (builder.StartMethod("public", method.ReturnType, method.Name, method.IsAsync, method.ParameterDeclarations))
-                                gen.GenerateMethodBody(builder, method);
+                                gen.GenerateMethodBody(builder, method, model);
                         }
 
                         if (model.HasDisposable)
@@ -420,7 +417,7 @@ namespace PolyBridge.Generator
             }
         }
 
-        // ========== NativeEventBridge Pipeline ==========
+        // ========== NativeBridge Pipeline ==========
 
         private static BridgeModel GetBridgeModel(ClassDeclarationSyntax syntax, Compilation compilation)
         {
