@@ -37,7 +37,17 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.LoginAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.LoginAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -51,7 +61,17 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.GetUserNameAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.GetUserNameAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -65,7 +85,19 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.SendAsync))]
+        [BridgeResult(nameof(MyPlugin.FetchAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.SendAsync))]
+        [BridgeError(nameof(MyPlugin.FetchAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -101,7 +133,17 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.FetchAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.FetchAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -176,16 +218,16 @@ namespace TestApp
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
 
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             Assert.Contains("UNITY_ANDROID", androidSrc);
-            Assert.Contains("class MyPluginAndroid", androidSrc);
+            Assert.Contains("class MyPluginAndroidImpl", androidSrc);
             Assert.Contains("IMyPluginImpl", androidSrc);
 
-            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(iosSrc);
             Assert.Contains("UNITY_IOS", iosSrc);
-            Assert.Contains("class MyPluginIOS", iosSrc);
+            Assert.Contains("class MyPluginIOSImpl", iosSrc);
             Assert.Contains("IMyPluginImpl", iosSrc);
         }
 
@@ -193,7 +235,7 @@ namespace TestApp
         public void Android_SyncVoid_CallsBridge()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("_bridge.Call(\"DoSomething\")", src);
         }
@@ -202,7 +244,7 @@ namespace TestApp
         public void Android_SyncReturn_CallsBridgeGeneric()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncReturnSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("_bridge.Call<int>(\"GetValue\")", src);
         }
@@ -211,10 +253,10 @@ namespace TestApp
         public void Android_AsyncTaskVoid_UsesTCS()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncTaskVoidSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("TaskCompletionSource<bool>", src);
-            Assert.Contains("AndroidBridgeCallback", src);
+            Assert.Contains("MyPluginCallback", src);
             Assert.Contains("_bridge.Call(\"LoginAsync\"", src);
         }
 
@@ -222,7 +264,7 @@ namespace TestApp
         public void Android_AsyncTaskReturn_UsesTCSWithConversion()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncTaskReturnSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("TaskCompletionSource<string>", src);
             Assert.Contains("TrySetResult(result)", src);
@@ -232,7 +274,7 @@ namespace TestApp
         public void IOS_SyncVoid_UsesExtern()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(src);
             Assert.Contains("DllImport(\"__Internal\"", src);
             Assert.Contains("static extern void DoSomething_Extern()", src);
@@ -242,7 +284,7 @@ namespace TestApp
         public void IOS_SyncReturn_UsesExternWithReturnType()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncReturnSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(src);
             Assert.Contains("static extern int GetValue_Extern()", src);
         }
@@ -251,7 +293,7 @@ namespace TestApp
         public void IOS_AsyncTaskVoid_UsesCallbackPattern()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncTaskVoidSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(src);
             Assert.Contains("IOSBridgeCallback.Register", src);
             Assert.Contains("IOSBridgeCallback.OnResult", src);
@@ -262,7 +304,7 @@ namespace TestApp
         public void IOS_AsyncExtern_HasCallbackParams()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncTaskVoidSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(src);
             Assert.Contains("int requestId", src);
             Assert.Contains("CallbackDelegate callback", src);
@@ -273,11 +315,11 @@ namespace TestApp
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(CustomNativeNamesSource);
 
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             Assert.Contains("android_fire", androidSrc);
 
-            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(iosSrc);
             Assert.Contains("ios_fire", iosSrc);
         }
@@ -292,7 +334,7 @@ namespace TestApp
             Assert.Contains("string message", interfaceSrc);
             Assert.Contains("int count", interfaceSrc);
 
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             Assert.Contains("message, count", androidSrc);
         }
@@ -308,8 +350,8 @@ namespace TestApp
             Assert.Contains("#elif UNITY_ANDROID", partialSrc);
             Assert.Contains("#elif UNITY_IOS", partialSrc);
             Assert.Contains("#endif", partialSrc);
-            Assert.Contains("new MyPluginAndroid()", partialSrc);
-            Assert.Contains("new MyPluginIOS()", partialSrc);
+            Assert.Contains("new MyPluginAndroidImpl()", partialSrc);
+            Assert.Contains("new MyPluginIOSImpl()", partialSrc);
         }
 
         [Fact]
@@ -402,7 +444,7 @@ namespace TestApp
         public void Android_Constructor_CreatesAndroidBridge()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("new PolyBridge.Core.Runtime.AndroidBridge(\"com.test.MyPlugin\")", src);
         }
@@ -411,7 +453,7 @@ namespace TestApp
         public void IOS_Constructor_HasComment()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(src);
             Assert.Contains("iOS does not require explicit object instantiation", src);
         }
@@ -420,7 +462,7 @@ namespace TestApp
         public void AsyncWithParams_Android_PassesParamsBeforeCallback()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(WithParametersSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("id, force, callback", src);
         }
@@ -429,7 +471,7 @@ namespace TestApp
         public void AsyncWithParams_IOS_PassesParamsBeforeRequestId()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(WithParametersSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(src);
             Assert.Contains("id, force, requestId", src);
         }
@@ -443,7 +485,17 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.GetUserAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.GetUserAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -458,7 +510,17 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.SendAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.SendAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -496,7 +558,7 @@ namespace TestApp
         public void CT_ExcludedFromNativeCall_Android()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             // Native call should have userId but NOT cancellationToken
             Assert.Contains("userId, callback", src);
@@ -507,7 +569,7 @@ namespace TestApp
         public void CT_RegistersTrySetCanceled_Android()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("cancellationToken.Register", src);
             Assert.Contains("TrySetCanceled", src);
@@ -518,7 +580,7 @@ namespace TestApp
         public void CT_TryFinally_Android()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("try {", src);
             Assert.Contains("finally {", src);
@@ -528,7 +590,7 @@ namespace TestApp
         public void CT_ExcludedFromExtern_IOS()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(src);
             // Extern declaration should have userId, requestId, callback but NOT cancellationToken
             Assert.Contains("string userId, int requestId", src);
@@ -540,7 +602,7 @@ namespace TestApp
         public void CT_RegistersUnregisterAndTrySetCanceled_IOS()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncWithCTSource);
-            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(src);
             Assert.Contains("cancellationToken.Register", src);
             Assert.Contains("IOSBridgeCallback.Unregister(requestId)", src);
@@ -554,7 +616,7 @@ namespace TestApp
             var (trees, diagnostics) = GeneratorTestHelper.RunGenerator(AsyncVoidWithCTSource);
             Assert.Empty(diagnostics);
 
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             Assert.Contains("ct.Register", androidSrc);
             // No native params, so callback comes directly
@@ -572,7 +634,7 @@ namespace TestApp
         public void CT_OnSyncMethod_CTExcludedFromNativeCall()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(SyncWithCTSource);
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             // Native call should only contain message, not cancellationToken
             Assert.Contains("\"DoSomething\", message", androidSrc);
@@ -590,7 +652,17 @@ namespace TestApp
 {
     public class UserInfo { public string Name; }
 
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.GetUserAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.GetUserAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -606,7 +678,17 @@ namespace TestApp
 {
     public class UserData { public string Name; }
 
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.SendDataAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.SendDataAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -621,7 +703,7 @@ namespace TestApp
         public void Serialization_ComplexReturn_UsesSerializerRegistry()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(ComplexReturnTypeSource);
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             Assert.Contains("PolyBridgeSerializerRegistry.Serializer.Deserialize<", androidSrc);
             Assert.DoesNotContain("JsonUtility", androidSrc);
@@ -631,7 +713,7 @@ namespace TestApp
         public void Serialization_PrimitiveReturn_NoSerializerCall()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncTaskReturnSource);
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             // string return should just pass through, no serializer call
             Assert.Contains("TrySetResult(result)", androidSrc);
@@ -642,7 +724,7 @@ namespace TestApp
         public void Serialization_ComplexParam_UsesSerializerSerialize_Android()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(ComplexParameterSource);
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             Assert.Contains("PolyBridgeSerializerRegistry.Serializer.Serialize(data)", androidSrc);
         }
@@ -651,7 +733,7 @@ namespace TestApp
         public void Serialization_ComplexParam_UsesSerializerSerialize_IOS()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(ComplexParameterSource);
-            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(iosSrc);
             Assert.Contains("PolyBridgeSerializerRegistry.Serializer.Serialize(data)", iosSrc);
         }
@@ -660,7 +742,7 @@ namespace TestApp
         public void Serialization_ComplexParam_IOSExtern_UsesStringType()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(ComplexParameterSource);
-            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOS");
+            var iosSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginIOSImpl");
             Assert.NotNull(iosSrc);
             // The extern for SaveUser should have "string data" instead of "UserData data"
             Assert.Contains("string data", iosSrc);
@@ -670,7 +752,7 @@ namespace TestApp
         public void Serialization_PrimitiveParam_PassedDirectly()
         {
             var (trees, _) = GeneratorTestHelper.RunGenerator(WithParametersSource);
-            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroid");
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(androidSrc);
             // Primitive params should be passed directly, not serialized
             Assert.DoesNotContain("Serialize(message)", androidSrc);
@@ -685,7 +767,17 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.GetValueAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.GetValueAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -708,7 +800,19 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeService(""com.test.MyPlugin"")]
+    [NativeBridge(""com.test.ICallback"")]
+    public partial class MyPluginCallback
+    {
+        [BridgeResult(nameof(MyPlugin.SendAsync))]
+        [BridgeResult(nameof(MyPlugin.GetCountAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.SendAsync))]
+        [BridgeError(nameof(MyPlugin.GetCountAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -804,6 +908,288 @@ namespace TestApp
             var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginEditorImpl");
             Assert.NotNull(src);
             Assert.Contains("Task.FromResult<", src);
+        }
+
+        // --- NativeBridge Tests ---
+
+        private const string EventBridgeSource = @"
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeBridge(""com.test.IMyEventListener"")]
+    public partial class MyEventBridge
+    {
+        public partial void onStateChanged(string state);
+        public partial void onCountUpdated(int count);
+        public partial void onReady();
+    }
+}";
+
+        private const string ServiceWithEventBridgeSource = @"
+using System.Threading.Tasks;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeBridge(""com.test.IMyEventListener"")]
+    public partial class MyPluginEventBridge
+    {
+        public partial void onReady();
+    }
+
+    [NativeService(""com.test.MyPlugin"", EventBridgeType = typeof(MyPluginEventBridge))]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial void DoSomething();
+    }
+}";
+
+        [Fact]
+        public void EventBridge_DeclaresEvents()
+        {
+            var (trees, diagnostics) = GeneratorTestHelper.RunGenerator(EventBridgeSource);
+            Assert.Empty(diagnostics);
+
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyEventBridge.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("event System.Action<string> OnStateChanged", src);
+            Assert.Contains("event System.Action<int> OnCountUpdated", src);
+            Assert.Contains("event System.Action OnReady", src);
+        }
+
+        [Fact]
+        public void EventBridge_ImplementsPartialMethods()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(EventBridgeSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyEventBridge.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("OnStateChanged?.Invoke(state)", src);
+            Assert.Contains("OnReady?.Invoke()", src);
+            Assert.Contains("NativeDispatcher.Post", src);
+        }
+
+        [Fact]
+        public void EventBridge_ImplementsIDisposable()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(EventBridgeSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyEventBridge.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("System.IDisposable", src);
+            Assert.Contains("void Dispose()", src);
+        }
+
+        [Fact]
+        public void EventBridge_Android_ExtendsAndroidJavaProxy()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(EventBridgeSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyEventBridge.Android");
+            Assert.NotNull(src);
+            Assert.Contains("UNITY_ANDROID", src);
+            Assert.Contains("UnityEngine.AndroidJavaProxy", src);
+            Assert.Contains("com.test.IMyEventListener", src);
+        }
+
+        [Fact]
+        public void ServiceWithEventBridge_HasEventBridgeField()
+        {
+            var (trees, diagnostics) = GeneratorTestHelper.RunGenerator(ServiceWithEventBridgeSource);
+            Assert.Empty(diagnostics);
+
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("_eventBridge", src);
+            Assert.Contains("EventBridge", src);
+            Assert.Contains("System.IDisposable", src);
+        }
+
+        [Fact]
+        public void ServiceWithEventBridge_ConstructorCreatesAndRegisters()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(ServiceWithEventBridgeSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("new global::TestApp.MyPluginEventBridge()", src);
+            Assert.Contains("RegisterEventBridge", src);
+        }
+
+        [Fact]
+        public void ServiceWithEventBridge_Android_HasRegistration()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(ServiceWithEventBridgeSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
+            Assert.NotNull(src);
+            Assert.Contains("addListener", src);
+            Assert.Contains("RegisterEventBridge", src);
+        }
+
+        [Fact]
+        public void ServiceWithEventBridge_Dispose()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(ServiceWithEventBridgeSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("_impl?.Dispose()", src);
+            Assert.Contains("_eventBridge?.Dispose()", src);
+        }
+
+        [Fact]
+        public void NoEventBridge_NoIDisposable()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
+            Assert.NotNull(src);
+            Assert.DoesNotContain("IDisposable", src);
+            Assert.DoesNotContain("Dispose", src);
+        }
+
+        // --- AccessModifier Mirroring Tests ---
+
+        private const string PublicMethodSource = @"
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial void DoSomething();
+    }
+}";
+
+        private const string InternalMethodSource = @"
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeService(""com.test.MyPlugin"")]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        internal partial void DoSomething();
+    }
+}";
+
+        private const string PrivateEventBridgeSource = @"
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeBridge(""com.test.IListener"")]
+    public partial class MyBridge
+    {
+        private partial void onReady();
+    }
+}";
+
+        [Fact]
+        public void AccessModifier_Public_Mirrored()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(PublicMethodSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("public partial void DoSomething()", src);
+        }
+
+        [Fact]
+        public void AccessModifier_Internal_Mirrored()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(InternalMethodSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("internal partial void DoSomething()", src);
+        }
+
+        [Fact]
+        public void AccessModifier_PrivateEventBridge_Mirrored()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(PrivateEventBridgeSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyBridge.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("private partial void onReady()", src);
+        }
+
+        [Fact]
+        public void AccessModifier_NoModifier_OmittedInEventBridge()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(EventBridgeSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyEventBridge.g.cs");
+            Assert.NotNull(src);
+            Assert.Contains("public partial void onStateChanged(", src);
+        }
+
+        // --- Proxy Generation Tests ---
+
+        [Fact]
+        public void Proxy_CallbackBridgeType()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(AsyncTaskVoidSource);
+
+            // AndroidImpl uses the callback bridge
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
+            Assert.NotNull(androidSrc);
+            Assert.Contains("new global::TestApp.MyPluginCallback()", androidSrc);
+
+            // NativeBridge generates the proxy class separately
+            var bridgeSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginCallback.g.cs");
+            Assert.NotNull(bridgeSrc);
+            Assert.Contains("event", bridgeSrc);
+            Assert.Contains("onSuccess", bridgeSrc);
+            Assert.Contains("onError", bridgeSrc);
+        }
+
+        private const string CustomCallbackInterfaceSource = @"
+using System.Threading.Tasks;
+using PolyBridge.Core.Attributes;
+
+namespace TestApp
+{
+    [NativeBridge(""com.test.IMyCallback"")]
+    public partial class MyCustomCallback
+    {
+        [BridgeResult(nameof(MyPlugin.FetchAsync))]
+        public partial void onSuccess(string result);
+
+        [BridgeError(nameof(MyPlugin.FetchAsync))]
+        public partial void onError(string error);
+    }
+
+    [NativeService(""com.test.MyPlugin"",
+        CallbackBridgeType = typeof(MyCustomCallback))]
+    public partial class MyPlugin
+    {
+        [NativeMethod]
+        public partial Task<string> FetchAsync();
+    }
+}";
+
+        [Fact]
+        public void Proxy_CustomCallbackInterface()
+        {
+            var (trees, diagnostics) = GeneratorTestHelper.RunGenerator(CustomCallbackInterfaceSource);
+            Assert.Empty(diagnostics);
+
+            // AndroidImpl uses the custom callback bridge
+            var androidSrc = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
+            Assert.NotNull(androidSrc);
+            Assert.Contains("MyCustomCallback()", androidSrc);
+
+            // NativeBridge generates Android partial with custom interface path
+            var bridgeAndroid = GeneratorTestHelper.FindGeneratedSource(trees, "MyCustomCallback.Android");
+            Assert.NotNull(bridgeAndroid);
+            Assert.Contains("com.test.IMyCallback", bridgeAndroid);
+        }
+
+        [Fact]
+        public void Proxy_NoProxyForSyncOnlyService()
+        {
+            var (trees, _) = GeneratorTestHelper.RunGenerator(SyncVoidSource);
+            var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
+            Assert.NotNull(src);
+            Assert.DoesNotContain("BridgeCallback", src);
+            Assert.DoesNotContain("EventListener", src);
         }
     }
 }

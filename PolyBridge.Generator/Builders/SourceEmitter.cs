@@ -21,7 +21,8 @@ namespace PolyBridge.Generator.Builders
 
         public void Emit(string name, string modifiers,
             bool isInterface = false, string inheritance = null,
-            string preprocessorGuard = null, Action<CodeBuilder> body = null)
+            string preprocessorGuard = null, Action<CodeBuilder> body = null,
+            string fileName = null)
         {
             var builder = new CodeBuilder();
 
@@ -31,7 +32,7 @@ namespace PolyBridge.Generator.Builders
             var nsScope = _namespace != null ? builder.StartNameSpace(_namespace) : null;
             using (nsScope)
             using (isInterface
-                ? builder.StartInterface(modifiers, name)
+                ? builder.StartInterface(modifiers, name, inheritance)
                 : builder.StartClass(modifiers, name, inheritance))
             {
                 body(builder);
@@ -41,11 +42,12 @@ namespace PolyBridge.Generator.Builders
                 builder.AppendPreprocessorEndif();
 
             var code = builder.GenerateFullCode();
+            var outputFileName = $"{fileName ?? name}.g.cs";
 
-            _context.AddSource($"{name}.g.cs",
+            _context.AddSource(outputFileName,
                 SourceText.From(code, Encoding.UTF8));
 
-            WritePhysicalFile($"{name}.g.cs", code);
+            WritePhysicalFile(outputFileName, code);
         }
 
         private void WritePhysicalFile(string fileName, string content)

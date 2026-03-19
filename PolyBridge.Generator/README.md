@@ -1,85 +1,109 @@
 # PolyBridge.Generator
 
-Roslyn `IIncrementalGenerator` 기반 소스 제너레이터. `[NativeService]` 클래스를 분석하여 Android/iOS 플랫폼별 구현 코드를 자동 생성.
+Roslyn `IIncrementalGenerator` 기반 소스 제너레이터. `[NativeService]`와 `[NativeBridge]` 클래스를 분석하여 플랫폼별 구현 코드를 자동 생성.
 
 ## 디렉토리
 
 ```
-Models/       데이터 모델 (ServiceModel, MethodModel, ParameterModel, IAsyncType)
-Generators/   플랫폼별 코드 생성기 (AndroidGenerator, IOSGenerator, EditorImplGenerator)
+Models/       데이터 모델 (ServiceModel, MethodModel, BridgeModel, BridgeMethodModel, ParameterModel)
+Generators/   코드 생성기 (AndroidGenerator, IOSGenerator, EditorImplGenerator, NativeBridgeGenerator)
 Builders/     코드 빌더 유틸리티 (CodeBuilder, SourceEmitter)
 ```
 
-## 생성 흐름
+## 생성 파이프라인
+
+### Pipeline 1: NativeService
 
 1. `[NativeService]` + `partial class` 구문 감지
 2. `ServiceModel` / `MethodModel` 추출
-3. 서비스당 5개 파일 생성:
-   - `I{Name}Impl` — 인터페이스
-   - `{Name}.g.cs` — partial 클래스 (플랫폼 분기 + 위임)
+3. 서비스당 생성:
+   - `I{Name}Impl` — 인터페이스 (EventBridge가 있으면 `IDisposable` 상속)
+   - `{Name}.g.cs` — partial 클래스 (플랫폼 분기, EventBridge 연결, Dispose)
    - `{Name}EditorImpl` — 에디터 구현 (`#if UNITY_EDITOR`)
-   - `{Name}Android` — Android 구현 (`#if UNITY_ANDROID`)
-   - `{Name}IOS` — iOS 구현 (`#if UNITY_IOS`)
+   - `{Name}AndroidImpl` — Android 구현 (비동기 메서드는 CallbackBridge 인스턴스 사용) (`#if UNITY_ANDROID`)
+   - `{Name}IOSImpl` — iOS 구현 (`#if UNITY_IOS`)
 
-## MethodModel 핵심 속성
+### Pipeline 2: NativeBridge
 
-| 속성 | 설명 |
-|---|---|
-| `AllParameters` | CT 포함 전체 파라미터 (메서드 시그니처용) |
-| `NativeParameters` | CT 제외 파라미터 (네이티브 호출용) |
-| `NativeParameterExpressions` | 복합 타입에 `Serialize()` 적용된 인자 목록 |
-| `HasCancellationToken` | CT 파라미터 존재 여부 |
-| `MockMethodName` | Mock 어트리뷰트로 지정된 메서드명 (없으면 null) |
-| `ResultConversion()` | 반환 타입 변환 (기본 타입: Parse, 복합 타입: Deserialize) |
-| `ParameterConversion()` | 파라미터 변환 (기본 타입: 직접 전달, 복합 타입: Serialize) |
+1. `[NativeBridge]` + `partial class` 구문 감지
+2. `BridgeModel` / `BridgeMethodModel` 추출
+3. 브릿지당 생성:
+   - `{Name}.g.cs` — event 선언, partial 메서드 구현 (NativeDispatcher.Post), IDisposable
+   - `{Name}.Android.g.cs` — `AndroidJavaProxy` 상속 + 생성자 (`#if UNITY_ANDROID`)
 
-## 생성 코드 예시
+## Android 프록시 생성
 
-### Android 비동기 + CancellationToken
+### NativeBridge (콜백/이벤트 통합)
 
+`NativeBridge` 클래스 자체가 `AndroidJavaProxy`로 생성. 콜백과 이벤트 모두 동일한 방식으로 처리.
+
+**콜백 브릿지** — `[BridgeResult(nameof(Method))]`/`[BridgeError(nameof(Method))]`로 대상 서비스 메서드가 지정된 콜백이 Java 인터페이스와 매칭:
 ```csharp
-var tcs = new TaskCompletionSource<string>();
-var callback = new AndroidBridgeCallback(
-    result => { try { tcs.TrySetResult(result); } catch (Exception ex) { tcs.TrySetException(ex); } },
-    error => tcs.TrySetException(new Exception(error)));
-var ctr = cancellationToken.Register(() => tcs.TrySetCanceled(cancellationToken));
-_bridge.Call("getUser", userId, callback);
-try { return await tcs.Task; }
-finally { ctr.Dispose(); }
-```
-
-### iOS 비동기 + 복합 타입 파라미터
-
-```csharp
-// extern 선언에서 복합 타입은 string으로 변환
-[DllImport("__Internal")]
-private static extern void SaveUser_Extern(string data, int requestId, CallbackDelegate callback);
-
-// 호출 시 Serialize 적용
-SaveUser_Extern(PolyBridgeSerializerRegistry.Serializer.Serialize(data), requestId, IOSBridgeCallback.OnResult);
-```
-
-## EditorImpl 생성
-
-`EditorImplGenerator`는 에디터 전용 구현 클래스를 생성. `IPlatformGenerator`를 구현하지 않으며 별도 로직으로 동작.
-
-- `[MockImpl]` / `[MockReturn]` 어트리뷰트가 있는 메서드 → `_owner.MockMethod()` 호출
-- Mock 어트리뷰트가 없는 메서드 → `default` 폴백 (`Task`는 `Task.CompletedTask`, `Task<T>`는 `Task.FromResult<T>(default)`)
-
-```csharp
-// 생성 예시
-#if UNITY_EDITOR
-internal class MyPluginEditorImpl : IMyPluginImpl
+// 생성: Android partial
+#if UNITY_ANDROID
+public partial class MyPluginCallback : UnityEngine.AndroidJavaProxy
 {
-    private readonly MyPlugin _owner;
-    internal MyPluginEditorImpl(MyPlugin owner) => _owner = owner;
-
-    public void DoSomething() => _owner.MockImplDoSomething();
-    public Task<int> GetValueAsync() => _owner.MockReturnGetValueAsync();
-    public string GetName() => default;
+    public MyPluginCallback() : base("com.example.IPluginCallback") { }
 }
 #endif
 ```
+
+**이벤트 브릿지** — partial 메서드명이 Java 인터페이스와 직접 매칭:
+```csharp
+// 생성: Android partial
+#if UNITY_ANDROID
+public partial class MyPluginEventBridge : UnityEngine.AndroidJavaProxy
+{
+    public MyPluginEventBridge() : base("com.example.IPluginEventListener") { }
+}
+#endif
+
+// 생성: event + partial 메서드 구현
+public partial class MyPluginEventBridge : System.IDisposable
+{
+    public event System.Action<string> OnStateChanged;
+    public event System.Action<string, int> OnPaymentCompleted;
+
+    public partial void onStateChanged(string state)
+    {
+        NativeDispatcher.Post(() => OnStateChanged?.Invoke(state));
+    }
+
+    public partial void onPaymentCompleted(string receipt, int amount)
+    {
+        NativeDispatcher.Post(() => OnPaymentCompleted?.Invoke(receipt, amount));
+    }
+}
+```
+
+## 핵심 모델
+
+### MethodModel
+
+| 속성 | 설명 |
+|---|---|
+| `AccessModifier` | 사용자 선언의 접근 제한자 |
+| `PartialModifier` | 생성 시 사용할 한정자 (예: `"public partial"`) |
+| `AllParameters` | CT 포함 전체 파라미터 |
+| `NativeParameters` | CT 제외 파라미터 |
+| `MockMethodName` | Mock 어트리뷰트로 지정된 메서드명 |
+
+### BridgeMethodModel
+
+| 속성 | 설명 |
+|---|---|
+| `Name` | 메서드명 (Java 인터페이스 메서드명과 동일) |
+| `EventName` | C# event명 (첫 글자 대문자) |
+| `Parameters` | 파라미터 목록 (복수 파라미터 지원) |
+| `EventDelegateType` | 이벤트 델리게이트 타입 (예: `System.Action<string, int>`) |
+| `TargetMethodName` | `[BridgeResult]`/`[BridgeError]`로 지정된 대상 서비스 메서드명 |
+
+### 콜백 코드 생성 규칙
+
+- `[BridgeResult(nameof(Method))]` / `[BridgeError(nameof(Method))]` — 대상 메서드 지정 필수 (파라미터 없는 생성자 없음)
+- `AllowMultiple = true` — 하나의 브릿지 메서드가 여러 서비스 메서드를 처리 가능
+- 0-파라미터 브릿지 메서드 → `() =>` 람다로 생성
+- 타입 변환: 동일 타입(예: `int`→`int`) → 직접 전달, `string`→다른 타입 → `Parse`/`Deserialize` 자동 적용
 
 ## 플랫폼 생성기 확장
 

@@ -50,7 +50,8 @@ namespace PolyBridge.Test
         internal static (ImmutableArray<SyntaxTree> GeneratedTrees, ImmutableArray<Diagnostic> Diagnostics)
             RunGenerator(string source)
         {
-            var syntaxTree = CSharpSyntaxTree.ParseText(source);
+            var parseOptions = new CSharpParseOptions(preprocessorSymbols: new[] { "UNITY_EDITOR" });
+            var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
 
             var compilation = CSharpCompilation.Create(
                 assemblyName: "TestAssembly",

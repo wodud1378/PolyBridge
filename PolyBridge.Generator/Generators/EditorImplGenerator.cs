@@ -6,7 +6,8 @@ namespace PolyBridge.Generator.Generators
 {
     internal static class EditorImplGenerator
     {
-        internal static void Generate(SourceEmitter emitter, string className, string implInterfaceName, ImmutableArray<MethodModel> methods)
+        internal static void Generate(SourceEmitter emitter, string className, string implInterfaceName,
+            ImmutableArray<MethodModel> methods, bool hasEvents)
         {
             var mockClassName = $"{className}EditorImpl";
 
@@ -25,6 +26,14 @@ namespace PolyBridge.Generator.Generators
                     {
                         builder.AppendLine();
                         GenerateMethodBody(builder, method);
+                    }
+
+                    if (hasEvents)
+                    {
+                        builder.AppendLine();
+                        using (builder.StartMethod("public", "void", "Dispose"))
+                        {
+                        }
                     }
                 });
         }

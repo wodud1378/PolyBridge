@@ -8,19 +8,18 @@ namespace PolyBridge.Generator.Generators
     internal class IOSGenerator : IPlatformGenerator
     {
         public string PlatformSymbol => "UNITY_IOS";
-        public string PlatformSuffix => "IOS";
+        public string PlatformSuffix => "IOSImpl";
 
         private static string ExternName(MethodModel method) => $"{method.Name}_Extern";
 
-        public void GenerateFields(CodeBuilder builder, ImmutableArray<MethodModel> methods)
+        public void GenerateFields(CodeBuilder builder, ServiceModel model)
         {
-            foreach (var method in methods)
+            foreach (var method in model.Methods)
             {
                 var externName = ExternName(method);
 
                 if (method.IsAsync)
                 {
-                    // Extern declarations use native parameters only (no CT), with complex types as string
                     var nativeExternParams = string.Join(", ", method.NativeParameters.Select(p =>
                         MethodModel.IsPrimitiveType(p.Type) ? $"{p.Type} {p.Name}" : $"string {p.Name}"));
                     var extraParams = "int requestId, PolyBridge.Core.Runtime.IOSBridgeCallback.CallbackDelegate callback";
@@ -30,7 +29,6 @@ namespace PolyBridge.Generator.Generators
                 }
                 else
                 {
-                    // Sync extern: native parameters only, complex types as string
                     var nativeExternParams = string.Join(", ", method.NativeParameters.Select(p =>
                         MethodModel.IsPrimitiveType(p.Type) ? $"{p.Type} {p.Name}" : $"string {p.Name}"));
                     builder.AppendLine($"[System.Runtime.InteropServices.DllImport(\"__Internal\", EntryPoint = \"{method.IOSNativeName}\")]");
@@ -39,8 +37,10 @@ namespace PolyBridge.Generator.Generators
             }
         }
 
-        public void GenerateConstructorBody(CodeBuilder builder, string classPath)
-            => builder.AppendLine("// iOS does not require explicit object instantiation for static externs.");
+        public void GenerateConstructorBody(CodeBuilder builder, ServiceModel model)
+        {
+            builder.AppendLine("// iOS does not require explicit object instantiation for static externs.");
+        }
 
         public void GenerateMethodBody(CodeBuilder builder, MethodModel method)
         {
@@ -48,6 +48,20 @@ namespace PolyBridge.Generator.Generators
                 GenerateAsyncBody(builder, method);
             else
                 GenerateSyncBody(builder, method);
+        }
+
+        public void GenerateDisposeBody(CodeBuilder builder, ServiceModel model)
+        {
+            // iOS event bridge cleanup is handled by the event bridge's own Dispose
+        }
+
+        public void GenerateInnerClasses(CodeBuilder builder, ServiceModel model)
+        {
+        }
+
+        public void GenerateEventBridgeRegistration(CodeBuilder builder, ServiceModel model)
+        {
+            // iOS doesn't need explicit event bridge registration — native side calls methods directly
         }
 
         private static void GenerateSyncBody(CodeBuilder builder, MethodModel method)

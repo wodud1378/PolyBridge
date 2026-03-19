@@ -21,9 +21,11 @@ namespace PolyBridge.Generator.Builders
             return BeginScope(line);
         }
 
-        public IDisposable StartInterface(string modifiers, string name)
+        public IDisposable StartInterface(string modifiers, string name, string inheritance = null)
         {
-            return BeginScope($"{modifiers} interface {name}");
+            var line = $"{modifiers} interface {name}";
+            if (!string.IsNullOrEmpty(inheritance)) line += $" : {inheritance}";
+            return BeginScope(line);
         }
 
         public IDisposable StartConstructor(string modifiers, string className, string bodyPrefix = null)

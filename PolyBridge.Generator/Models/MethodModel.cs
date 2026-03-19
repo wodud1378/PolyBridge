@@ -5,6 +5,7 @@ namespace PolyBridge.Generator.Models
 {
     internal record MethodModel(
         string Name,
+        string AccessModifier,
         string AndroidNativeName,
         string IOSNativeName,
         string ReturnType,
@@ -17,6 +18,7 @@ namespace PolyBridge.Generator.Models
         string MockMethodName = null)
     {
         public string Name { get; } = Name;
+        public string AccessModifier { get; } = AccessModifier;
         public string AndroidNativeName { get; } = AndroidNativeName;
         public string IOSNativeName { get; } = IOSNativeName;
         public string ReturnType { get; } = ReturnType;
@@ -27,6 +29,8 @@ namespace PolyBridge.Generator.Models
         public bool HasCancellationToken { get; } = HasCancellationToken;
         public string CancellationTokenParameterName { get; } = CancellationTokenParameterName;
         public string MockMethodName { get; } = MockMethodName;
+
+        public string PartialModifier => string.IsNullOrEmpty(AccessModifier) ? "partial" : $"{AccessModifier} partial";
 
         // For backward compat: Parameters = AllParameters
         public ImmutableArray<ParameterModel> Parameters => AllParameters;
@@ -96,6 +100,7 @@ namespace PolyBridge.Generator.Models
         {
             if (other is null) return false;
             return Name == other.Name &&
+                   AccessModifier == other.AccessModifier &&
                    AndroidNativeName == other.AndroidNativeName &&
                    IOSNativeName == other.IOSNativeName &&
                    ReturnType == other.ReturnType &&
@@ -108,6 +113,6 @@ namespace PolyBridge.Generator.Models
                    MockMethodName == other.MockMethodName;
         }
 
-        public override int GetHashCode() => HashHelper.Combine(Name, AndroidNativeName, IOSNativeName, ReturnType, InnerReturnType, AsyncType, AllParameters, NativeParameters, HasCancellationToken, CancellationTokenParameterName, MockMethodName);
+        public override int GetHashCode() => HashHelper.Combine(Name, AccessModifier, AndroidNativeName, IOSNativeName, ReturnType, InnerReturnType, AsyncType, AllParameters, NativeParameters, HasCancellationToken, CancellationTokenParameterName, MockMethodName);
     }
 }
