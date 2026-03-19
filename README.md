@@ -223,7 +223,9 @@ public class TestPlugin {
 }
 ```
 
-### iOS
+### iOS (실험적)
+
+> iOS는 P/Invoke 기반 코드 생성을 지원하지만, 테스트 기기 부재로 실기기 검증이 완료되지 않은 상태입니다. 동기/비동기 메서드의 기본 코드 생성은 동작하나, `NativeBridge` 이벤트 연동 등 일부 기능은 Android와 동일한 수준의 안정성을 보장하지 않습니다. 추후 안정화 예정.
 
 iOS는 C 함수 규약 기반. P/Invoke extern으로 자동 생성됨.
 
@@ -240,6 +242,30 @@ void MyPlugin_getUserAsync(const char* userId, int requestId, BridgeCallback cal
     callback(requestId, result, NULL);
 }
 ```
+
+## 빌드
+
+### 제너레이터 빌드
+
+```bash
+# 테스트 실행
+dotnet test PolyBridge.Test/PolyBridge.Test.csproj
+
+# 제너레이터 DLL 빌드 + Unity 플러그인 폴더에 복사
+bash Scripts/build-generator.sh
+```
+
+빌드 결과물은 `PolyBridge.Core/Plugins/PolyBridge.Generator.dll`에 출력됨.
+Unity Inspector에서 해당 DLL을 선택하고:
+1. `RoslynAnalyzer` 라벨 추가
+2. 모든 플랫폼 체크 해제
+
+### Unity 프로젝트에 적용
+
+1. `PolyBridge.Core/` 패키지 import
+2. `PolyBridge.Core/Plugins/PolyBridge.Generator.dll`에 `RoslynAnalyzer` 라벨 설정
+3. `[NativeService]`, `[NativeBridge]` 어트리뷰트로 서비스 선언
+4. Unity가 자동으로 소스 제너레이터를 실행하여 코드 생성
 
 ## 진단 경고
 
