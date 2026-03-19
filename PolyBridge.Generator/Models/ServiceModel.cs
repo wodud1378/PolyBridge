@@ -29,11 +29,10 @@ namespace PolyBridge.Generator.Models
         string ClassName,
         string Namespace,
         string ClassPath,
-        string CallbackBridgeTypeName,
+        string BridgeTypeName,
+        string BridgeAccessModifier,
         ImmutableArray<CallbackMapping> CallbackResultMappings,
         ImmutableArray<CallbackMapping> CallbackErrorMappings,
-        string EventBridgeTypeName,
-        string EventBridgeAccessModifier,
         string SourceFilePath,
         bool EmitPhysicalFiles,
         ImmutableArray<MethodModel> Methods,
@@ -42,20 +41,17 @@ namespace PolyBridge.Generator.Models
         public string ClassName { get; } = ClassName;
         public string Namespace { get; } = Namespace;
         public string ClassPath { get; } = ClassPath;
-        public string CallbackBridgeTypeName { get; } = CallbackBridgeTypeName;
+        public string BridgeTypeName { get; } = BridgeTypeName;
+        public string BridgeAccessModifier { get; } = BridgeAccessModifier;
         public ImmutableArray<CallbackMapping> CallbackResultMappings { get; } = CallbackResultMappings;
         public ImmutableArray<CallbackMapping> CallbackErrorMappings { get; } = CallbackErrorMappings;
-        public string EventBridgeTypeName { get; } = EventBridgeTypeName;
-        public string EventBridgeAccessModifier { get; } = EventBridgeAccessModifier;
         public string SourceFilePath { get; } = SourceFilePath;
         public bool EmitPhysicalFiles { get; } = EmitPhysicalFiles;
         public ImmutableArray<MethodModel> Methods { get; } = Methods;
         public ImmutableArray<string> NonPartialMethodNames { get; } = NonPartialMethodNames;
 
-        public bool HasCallbackBridge => !string.IsNullOrEmpty(CallbackBridgeTypeName);
-        public bool HasEventBridge => !string.IsNullOrEmpty(EventBridgeTypeName);
+        public bool HasBridge => !string.IsNullOrEmpty(BridgeTypeName);
         public bool HasAsyncMethods => Methods.Any(m => m.IsAsync);
-        public bool HasDisposable => HasEventBridge || HasCallbackBridge;
 
         public CallbackMapping GetResultMapping(string methodName)
         {
@@ -73,17 +69,16 @@ namespace PolyBridge.Generator.Models
             return ClassName == other.ClassName &&
                    Namespace == other.Namespace &&
                    ClassPath == other.ClassPath &&
-                   CallbackBridgeTypeName == other.CallbackBridgeTypeName &&
+                   BridgeTypeName == other.BridgeTypeName &&
+                   BridgeAccessModifier == other.BridgeAccessModifier &&
                    CallbackResultMappings.SequenceEqual(other.CallbackResultMappings) &&
                    CallbackErrorMappings.SequenceEqual(other.CallbackErrorMappings) &&
-                   EventBridgeTypeName == other.EventBridgeTypeName &&
-                   EventBridgeAccessModifier == other.EventBridgeAccessModifier &&
                    SourceFilePath == other.SourceFilePath &&
                    EmitPhysicalFiles == other.EmitPhysicalFiles &&
                    Methods.SequenceEqual(other.Methods) &&
                    NonPartialMethodNames.SequenceEqual(other.NonPartialMethodNames);
         }
 
-        public override int GetHashCode() => HashHelper.Combine(ClassName, Namespace, ClassPath, CallbackBridgeTypeName, CallbackResultMappings, CallbackErrorMappings, EventBridgeTypeName, EventBridgeAccessModifier, SourceFilePath, EmitPhysicalFiles, Methods, NonPartialMethodNames);
+        public override int GetHashCode() => HashHelper.Combine(ClassName, Namespace, ClassPath, BridgeTypeName, BridgeAccessModifier, CallbackResultMappings, CallbackErrorMappings, SourceFilePath, EmitPhysicalFiles, Methods, NonPartialMethodNames);
     }
 }

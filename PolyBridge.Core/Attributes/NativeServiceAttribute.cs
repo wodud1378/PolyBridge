@@ -6,8 +6,7 @@ namespace PolyBridge.Core.Attributes
     public class NativeServiceAttribute : Attribute
     {
         public string AndroidClassPath { get; }
-        public Type CallbackBridgeType { get; set; }
-        public Type EventBridgeType { get; set; }
+        public Type BridgeType { get; set; }
 
         public NativeServiceAttribute(string androidClassPath)
         {

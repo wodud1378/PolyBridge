@@ -61,12 +61,12 @@ namespace PolyBridge.Generator
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        private static readonly DiagnosticDescriptor MissingCallbackBridgeWarning = new(
+        private static readonly DiagnosticDescriptor MissingBridgeError = new(
             id: "PB0006",
-            title: "Async methods without CallbackBridgeType",
-            messageFormat: "[NativeService] class '{0}' has async methods but no CallbackBridgeType specified; async methods will not function on Android",
+            title: "Async methods require BridgeType",
+            messageFormat: "[NativeService] class '{0}' has async methods but no BridgeType specified; define a [NativeBridge] class with [BridgeResult]/[BridgeError] and set BridgeType = typeof(...)",
             category: "PolyBridge",
-            defaultSeverity: DiagnosticSeverity.Warning,
+            defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -116,33 +116,40 @@ namespace PolyBridge.Generator
 
             var classPath = serviceAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
 
-            string callbackBridgeTypeName = null;
+            string bridgeTypeName = null;
+            string bridgeAccessModifier = "internal";
             var callbackResultMappingsBuilder = ImmutableArray.CreateBuilder<CallbackMapping>();
             var callbackErrorMappingsBuilder = ImmutableArray.CreateBuilder<CallbackMapping>();
-            string eventBridgeTypeName = null;
-            string eventBridgeAccessModifier = "internal";
 
             var bridgeResultAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.BridgeResultAttribute");
             var bridgeErrorAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.BridgeErrorAttribute");
 
             foreach (var named in serviceAttr.NamedArguments)
             {
-                if (named.Key == "CallbackBridgeType")
+                if (named.Key == "BridgeType")
                 {
-                    ITypeSymbol cbTypeSymbol = null;
-                    if (named.Value.Kind == TypedConstantKind.Type && named.Value.Value is ITypeSymbol ct)
+                    ITypeSymbol bridgeTypeSymbol = null;
+                    if (named.Value.Kind == TypedConstantKind.Type && named.Value.Value is ITypeSymbol bt)
                     {
-                        cbTypeSymbol = ct;
-                        callbackBridgeTypeName = ct.ToDisplayString(FqFormat);
+                        bridgeTypeSymbol = bt;
+                        bridgeTypeName = bt.ToDisplayString(FqFormat);
+                        bridgeAccessModifier = bt.DeclaredAccessibility switch
+                        {
+                            Accessibility.Public => "public",
+                            Accessibility.Internal => "internal",
+                            Accessibility.Private => "private",
+                            _ => "internal"
+                        };
                     }
                     else if (named.Value.Value != null)
                     {
-                        callbackBridgeTypeName = named.Value.Value.ToString();
+                        bridgeTypeName = named.Value.Value.ToString();
                     }
 
-                    if (cbTypeSymbol != null)
+                    // Scan BridgeResult/BridgeError mappings from the bridge type
+                    if (bridgeTypeSymbol != null)
                     {
-                        foreach (var member in cbTypeSymbol.GetMembers().OfType<IMethodSymbol>())
+                        foreach (var member in bridgeTypeSymbol.GetMembers().OfType<IMethodSymbol>())
                         {
                             var methodName = member.Name;
                             var eventName = char.ToUpperInvariant(methodName[0]) + methodName.Substring(1);
@@ -150,7 +157,6 @@ namespace PolyBridge.Generator
                                 .Select(p => new ParameterModel(p.Type.ToDisplayString(FqFormat), p.Name))
                                 .ToImmutableArray();
 
-                            // AllowMultiple: one bridge method can have multiple BridgeResult/BridgeError attributes
                             if (bridgeResultAttrSymbol != null)
                             {
                                 foreach (var resultAttr in member.GetAttributes().Where(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, bridgeResultAttrSymbol)))
@@ -175,24 +181,6 @@ namespace PolyBridge.Generator
                                 }
                             }
                         }
-                    }
-                }
-                else if (named.Key == "EventBridgeType")
-                {
-                    if (named.Value.Kind == TypedConstantKind.Type && named.Value.Value is ITypeSymbol eventBridgeType)
-                    {
-                        eventBridgeTypeName = eventBridgeType.ToDisplayString(FqFormat);
-                        eventBridgeAccessModifier = eventBridgeType.DeclaredAccessibility switch
-                        {
-                            Accessibility.Public => "public",
-                            Accessibility.Internal => "internal",
-                            Accessibility.Private => "private",
-                            _ => "internal"
-                        };
-                    }
-                    else if (named.Value.Value != null)
-                    {
-                        eventBridgeTypeName = named.Value.Value.ToString();
                     }
                 }
             }
@@ -254,11 +242,10 @@ namespace PolyBridge.Generator
                     ? null
                     : classSymbol.ContainingNamespace.ToDisplayString(),
                 classPath,
-                callbackBridgeTypeName,
+                bridgeTypeName,
+                bridgeAccessModifier,
                 callbackResultMappingsBuilder.ToImmutable(),
                 callbackErrorMappingsBuilder.ToImmutable(),
-                eventBridgeTypeName,
-                eventBridgeAccessModifier,
                 syntax.SyntaxTree.FilePath,
                 emitPhysicalFiles,
                 methods,
@@ -279,9 +266,9 @@ namespace PolyBridge.Generator
             foreach (var name in model.NonPartialMethodNames)
                 context.ReportDiagnostic(Diagnostic.Create(NotPartialMethodWarning, Location.None, model.ClassName, name));
 
-            // PB0006: async methods without CallbackBridgeType
-            if (model.HasAsyncMethods && !model.HasCallbackBridge)
-                context.ReportDiagnostic(Diagnostic.Create(MissingCallbackBridgeWarning, Location.None, model.ClassName));
+            // PB0006: async methods without BridgeType
+            if (model.HasAsyncMethods && !model.HasBridge)
+                context.ReportDiagnostic(Diagnostic.Create(MissingBridgeError, Location.None, model.ClassName));
 
             foreach (var method in model.Methods)
             {
@@ -295,32 +282,32 @@ namespace PolyBridge.Generator
                 outputDir = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(model.SourceFilePath)!, "Generated");
             var emitter = new SourceEmitter(context, model.Namespace, outputDir);
 
-            var implInheritance = model.HasDisposable ? "System.IDisposable" : null;
+            var implInheritance = model.HasBridge ? "System.IDisposable" : null;
             emitter.Emit(implInterfaceName, "internal", isInterface: true, inheritance: implInheritance, body: builder =>
                 {
                     foreach (var method in model.Methods)
                         builder.AppendLine($"{method.ReturnType} {method.Name}({method.ParameterDeclarations});");
                 });
 
-            var partialClassInheritance = model.HasDisposable ? "System.IDisposable" : null;
+            var partialClassInheritance = model.HasBridge ? "System.IDisposable" : null;
             emitter.Emit(model.ClassName, "public partial", inheritance: partialClassInheritance, body: builder =>
                 {
                     builder.AppendField("private", true, implInterfaceName, "_impl");
-                    if (model.HasEventBridge)
-                        builder.AppendField("private", true, model.EventBridgeTypeName, "_eventBridge");
+                    if (model.HasBridge)
+                        builder.AppendField("private", true, model.BridgeTypeName, "_nativeBridge");
                     builder.AppendLine();
 
-                    if (model.HasEventBridge)
+                    if (model.HasBridge)
                     {
-                        builder.AppendLine($"{model.EventBridgeAccessModifier} {model.EventBridgeTypeName} EventBridge => _eventBridge;");
+                        builder.AppendLine($"{model.BridgeAccessModifier} {model.BridgeTypeName} Bridge => _nativeBridge;");
                         builder.AppendLine();
                     }
 
                     // Constructor
                     using (builder.StartConstructor("public", model.ClassName))
                     {
-                        if (model.HasEventBridge)
-                            builder.AppendLine($"_eventBridge = new {model.EventBridgeTypeName}();");
+                        if (model.HasBridge)
+                            builder.AppendLine($"_nativeBridge = new {model.BridgeTypeName}();");
 
                         builder.AppendPreprocessorIf("UNITY_EDITOR");
                         builder.AppendLine($"_impl = new {model.ClassName}EditorImpl(this);");
@@ -330,10 +317,10 @@ namespace PolyBridge.Generator
                             var gen = Generators[i];
                             var implClassName = $"{model.ClassName}{gen.PlatformSuffix}";
                             builder.AppendPreprocessorElif(gen.PlatformSymbol);
-                            if (model.HasEventBridge)
+                            if (model.HasBridge)
                             {
                                 builder.AppendLine($"var platformImpl = new {implClassName}();");
-                                builder.AppendLine("platformImpl.RegisterEventBridge(_eventBridge);");
+                                builder.AppendLine("platformImpl.RegisterBridge(_nativeBridge);");
                                 builder.AppendLine("_impl = platformImpl;");
                             }
                             else
@@ -358,19 +345,19 @@ namespace PolyBridge.Generator
                     }
 
                     // Dispose
-                    if (model.HasDisposable)
+                    if (model.HasBridge)
                     {
                         builder.AppendLine();
                         using (builder.StartMethod("public", "void", "Dispose"))
                         {
                             builder.AppendLine("_impl?.Dispose();");
-                            if (model.HasEventBridge)
-                                builder.AppendLine("_eventBridge?.Dispose();");
+                            if (model.HasBridge)
+                                builder.AppendLine("_nativeBridge?.Dispose();");
                         }
                     }
                 });
 
-            EditorImplGenerator.Generate(emitter, model.ClassName, implInterfaceName, model.Methods, model.HasDisposable);
+            EditorImplGenerator.Generate(emitter, model.ClassName, implInterfaceName, model.Methods, model.HasBridge);
 
             foreach (var gen in Generators)
             {
@@ -379,8 +366,8 @@ namespace PolyBridge.Generator
                     preprocessorGuard: gen.PlatformSymbol, body: builder =>
                     {
                         gen.GenerateFields(builder, model);
-                        if (model.HasEventBridge)
-                            builder.AppendField("private", false, model.EventBridgeTypeName, "_eventBridge");
+                        if (model.HasBridge)
+                            builder.AppendField("private", false, model.BridgeTypeName, "_nativeBridge");
                         builder.AppendLine();
 
                         using (builder.BeginScope($"internal {platformClassName}()"))
@@ -388,13 +375,13 @@ namespace PolyBridge.Generator
                             gen.GenerateConstructorBody(builder, model);
                         }
 
-                        if (model.HasEventBridge)
+                        if (model.HasBridge)
                         {
                             builder.AppendLine();
-                            using (builder.StartMethod("internal", "void", "RegisterEventBridge", false, $"{model.EventBridgeTypeName} eventBridge"))
+                            using (builder.StartMethod("internal", "void", "RegisterBridge", false, $"{model.BridgeTypeName} bridge"))
                             {
-                                builder.AppendLine("_eventBridge = eventBridge;");
-                                gen.GenerateEventBridgeRegistration(builder, model);
+                                builder.AppendLine("_nativeBridge = bridge;");
+                                gen.GenerateBridgeRegistration(builder, model);
                             }
                         }
 
@@ -405,7 +392,7 @@ namespace PolyBridge.Generator
                                 gen.GenerateMethodBody(builder, method, model);
                         }
 
-                        if (model.HasDisposable)
+                        if (model.HasBridge)
                         {
                             builder.AppendLine();
                             using (builder.StartMethod("public", "void", "Dispose"))

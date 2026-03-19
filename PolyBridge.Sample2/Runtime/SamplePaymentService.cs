@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using PolyBridge.Core.Attributes;
 
 namespace PolyBridge.Sample2
@@ -17,17 +16,5 @@ namespace PolyBridge.Sample2
         // Sync, with params
         [NativeMethod("setUserId")]
         public partial void SetUserId(string userId);
-
-        // Async, void return
-        [NativeMethod("requestLogin")]
-        public partial Task RequestLogin();
-
-        // Async, with return value
-        [NativeMethod("purchase")]
-        public partial Task<string> Purchase(string productId, int quantity);
-
-        // Different native names per platform
-        [NativeMethod("androidGetReceipt", "iosGetReceipt")]
-        public partial Task<string> GetReceipt(string transactionId);
     }
 }

@@ -47,7 +47,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -71,7 +71,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -97,7 +97,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -143,7 +143,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -495,7 +495,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -520,7 +520,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -662,7 +662,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -688,7 +688,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -777,7 +777,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -812,7 +812,7 @@ namespace TestApp
         public partial void onError(string error);
     }
 
-    [NativeService(""com.test.MyPlugin"", CallbackBridgeType = typeof(MyPluginCallback))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -938,7 +938,7 @@ namespace TestApp
         public partial void onReady();
     }
 
-    [NativeService(""com.test.MyPlugin"", EventBridgeType = typeof(MyPluginEventBridge))]
+    [NativeService(""com.test.MyPlugin"", BridgeType = typeof(MyPluginEventBridge))]
     public partial class MyPlugin
     {
         [NativeMethod]
@@ -999,8 +999,8 @@ namespace TestApp
 
             var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
             Assert.NotNull(src);
-            Assert.Contains("_eventBridge", src);
-            Assert.Contains("EventBridge", src);
+            Assert.Contains("_nativeBridge", src);
+            Assert.Contains("Bridge", src);
             Assert.Contains("System.IDisposable", src);
         }
 
@@ -1011,7 +1011,7 @@ namespace TestApp
             var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
             Assert.NotNull(src);
             Assert.Contains("new global::TestApp.MyPluginEventBridge()", src);
-            Assert.Contains("RegisterEventBridge", src);
+            Assert.Contains("RegisterBridge", src);
         }
 
         [Fact]
@@ -1021,7 +1021,7 @@ namespace TestApp
             var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPluginAndroidImpl");
             Assert.NotNull(src);
             Assert.Contains("addListener", src);
-            Assert.Contains("RegisterEventBridge", src);
+            Assert.Contains("RegisterBridge", src);
         }
 
         [Fact]
@@ -1031,7 +1031,7 @@ namespace TestApp
             var src = GeneratorTestHelper.FindGeneratedSource(trees, "MyPlugin.g.cs");
             Assert.NotNull(src);
             Assert.Contains("_impl?.Dispose()", src);
-            Assert.Contains("_eventBridge?.Dispose()", src);
+            Assert.Contains("_nativeBridge?.Dispose()", src);
         }
 
         [Fact]
@@ -1157,7 +1157,7 @@ namespace TestApp
     }
 
     [NativeService(""com.test.MyPlugin"",
-        CallbackBridgeType = typeof(MyCustomCallback))]
+        BridgeType = typeof(MyCustomCallback))]
     public partial class MyPlugin
     {
         [NativeMethod]

@@ -30,17 +30,17 @@ namespace PolyBridge.Generator.Generators
 
         public void GenerateDisposeBody(CodeBuilder builder, ServiceModel model)
         {
-            if (model.HasEventBridge)
-                builder.AppendLine("if (_eventBridge != null) _bridge.Call(\"removeListener\", _eventBridge);");
+            if (model.HasBridge)
+                builder.AppendLine("if (_nativeBridge != null) _bridge.Call(\"removeListener\", _nativeBridge);");
         }
 
         public void GenerateInnerClasses(CodeBuilder builder, ServiceModel model)
         {
         }
 
-        public void GenerateEventBridgeRegistration(CodeBuilder builder, ServiceModel model)
+        public void GenerateBridgeRegistration(CodeBuilder builder, ServiceModel model)
         {
-            builder.AppendLine("_bridge.Call(\"addListener\", _eventBridge);");
+            builder.AppendLine("_bridge.Call(\"addListener\", _nativeBridge);");
         }
 
         private static void GenerateSyncBody(CodeBuilder builder, MethodModel method)
@@ -80,15 +80,13 @@ namespace PolyBridge.Generator.Generators
             builder.AppendLine($"var {tcsVar} = new {tcsType}();");
 
             // Create callback bridge instance and subscribe
-            if (model?.HasCallbackBridge == true)
+            if (model?.HasBridge == true)
             {
-                builder.AppendLine($"var callback = new {model.CallbackBridgeTypeName}();");
+                builder.AppendLine($"var callback = new {model.BridgeTypeName}();");
             }
             else
             {
-                // Fallback: no callback bridge specified, cannot proceed
-                builder.AppendLine("// WARNING: No CallbackBridgeType specified. Async methods require a callback bridge.");
-                builder.AppendLine(awaitExpr);
+                builder.AppendLine("throw new System.NotSupportedException(\"CallbackBridgeType is not specified. Define a [NativeBridge] and set CallbackBridgeType on [NativeService].\");");
                 return;
             }
 

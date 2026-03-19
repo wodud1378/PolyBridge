@@ -59,7 +59,7 @@ namespace PolyBridge.Generator.Generators
         {
         }
 
-        public void GenerateEventBridgeRegistration(CodeBuilder builder, ServiceModel model)
+        public void GenerateBridgeRegistration(CodeBuilder builder, ServiceModel model)
         {
             // iOS doesn't need explicit event bridge registration — native side calls methods directly
         }

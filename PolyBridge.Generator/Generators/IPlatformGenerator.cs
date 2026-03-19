@@ -12,6 +12,6 @@ namespace PolyBridge.Generator.Generators
         void GenerateMethodBody(CodeBuilder builder, MethodModel method, ServiceModel model);
         void GenerateDisposeBody(CodeBuilder builder, ServiceModel model);
         void GenerateInnerClasses(CodeBuilder builder, ServiceModel model);
-        void GenerateEventBridgeRegistration(CodeBuilder builder, ServiceModel model);
+        void GenerateBridgeRegistration(CodeBuilder builder, ServiceModel model);
     }
 }

@@ -1,10 +1,12 @@
 using PolyBridge.Core.Attributes;
 
-// 콜백 브릿지 — 비동기 메서드의 성공/실패 처리 (internal: SDK 내부 구현)
-[NativeBridge("com.test.service.IServiceCallback")]
-internal partial class TestServiceCallback
+// 통합 브릿지 — 콜백(BridgeResult/BridgeError) + 이벤트를 하나의 클래스에서 처리
+[NativeBridge("com.test.service.IServiceBridge")]
+internal partial class TestServiceBridge
 {
-    // 기본 결과 핸들러 — 여러 비동기 메서드에서 공유 (AllowMultiple)
+    // === 콜백 — BridgeResult/BridgeError로 비동기 메서드 매핑 ===
+
+    // 공유 결과 핸들러 — 여러 비동기 메서드에서 사용 (AllowMultiple)
     [BridgeResult(nameof(TestService.RequestLoginAsync))]
     [BridgeResult(nameof(TestService.FetchDataAsync))]
     [BridgeResult(nameof(TestService.LoadProfileAsync))]
@@ -13,20 +15,19 @@ internal partial class TestServiceCallback
     // 전용 결과 핸들러 — 타입 일치로 변환 없이 직접 전달
     [BridgeResult(nameof(TestService.GetCountAsync))]
     public partial void onCountResult(int count);
+
+    // 전용 에러 핸들러 — 파라미터 없음
     [BridgeError(nameof(TestService.GetCountAsync))]
     public partial void onCountError();
 
-    // 에러 핸들러 — 모든 비동기 메서드에서 공유
+    // 공유 에러 핸들러
     [BridgeError(nameof(TestService.RequestLoginAsync))]
     [BridgeError(nameof(TestService.FetchDataAsync))]
     [BridgeError(nameof(TestService.LoadProfileAsync))]
     public partial void onError(string error);
-}
 
-// 이벤트 브릿지 — 네이티브→C# 이벤트 수신 (internal: SDK 내부 구현)
-[NativeBridge("com.test.service.IServiceEventListener")]
-internal partial class TestServiceEventBridge
-{
+    // === 이벤트 — 어트리뷰트 없음, partial 메서드 자체가 이벤트 ===
+
     // 단일 파라미터
     public partial void onStateChanged(string state);
 

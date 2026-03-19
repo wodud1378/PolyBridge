@@ -17,17 +17,15 @@ Serialization/    직렬화 인터페이스 및 레지스트리
 네이티브 브릿지 클래스를 선언.
 
 ```csharp
-[NativeService("com.example.MyPlugin",
-    CallbackBridgeType = typeof(MyPluginCallback),
-    EventBridgeType = typeof(MyPluginEventBridge))]
-public partial class MyPlugin { }
+[NativeService("com.test.service.TestPlugin",
+    BridgeType = typeof(TestServiceBridge))]
+public partial class TestService { }
 ```
 
 | 프로퍼티 | 설명 | 기본값 |
 |---|---|---|
-| `AndroidClassPath` | Java 브릿지 클래스 경로 (필수) | — |
-| `CallbackBridgeType` | 콜백 브릿지 클래스 (typeof) | null |
-| `EventBridgeType` | 이벤트 브릿지 클래스 (typeof) | null |
+| `AndroidClassPath` | Java 브릿지 클래스 경로 (필수) | -- |
+| `BridgeType` | NativeBridge 클래스 (typeof) -- 콜백과 이벤트를 통합 처리 | null |
 
 ### NativeMethod
 
@@ -43,40 +41,43 @@ public partial Task<string> FetchAsync();
 
 ### NativeBridge
 
-네이티브→C# 통신을 위한 통합 브릿지 클래스. 콜백과 이벤트 두 가지 용도로 사용. Android에서 클래스 자체가 `AndroidJavaProxy`로 생성되어 Java 인터페이스 메서드와 1:1 매칭.
+네이티브에서 C#으로의 통신을 위한 통합 브릿지 클래스. 하나의 클래스에서 콜백과 이벤트를 함께 처리. Android에서 클래스 자체가 `AndroidJavaProxy`로 생성되어 Java 인터페이스 메서드와 1:1 매칭.
 
-**콜백 브릿지** — `[BridgeResult(nameof(Method))]`/`[BridgeError(nameof(Method))]`로 대상 서비스 메서드를 지정 (필수):
+- **콜백 메서드** -- `[BridgeResult]`/`[BridgeError]` 어트리뷰트가 붙은 메서드. 비동기 서비스 메서드의 결과/에러를 수신
+- **이벤트 메서드** -- 어트리뷰트가 없는 메서드. partial 메서드 자체가 이벤트로 생성
+
 ```csharp
-[NativeBridge("com.example.IPluginCallback")]
-public partial class MyPluginCallback
+[NativeBridge("com.test.service.IServiceBridge")]
+internal partial class TestServiceBridge
 {
-    [BridgeResult(nameof(MyPlugin.GetUserAsync))]
+    // 콜백 -- BridgeResult/BridgeError로 비동기 메서드 매핑
+    [BridgeResult(nameof(TestService.RequestLoginAsync))]
+    [BridgeResult(nameof(TestService.FetchDataAsync))]
+    [BridgeResult(nameof(TestService.LoadProfileAsync))]
     public partial void onSuccess(string result);
 
-    [BridgeResult(nameof(MyPlugin.GetCountAsync))]
+    [BridgeResult(nameof(TestService.GetCountAsync))]
     public partial void onCountResult(int count);
 
-    [BridgeError(nameof(MyPlugin.GetUserAsync))]
+    [BridgeError(nameof(TestService.GetCountAsync))]
+    public partial void onCountError();
+
+    [BridgeError(nameof(TestService.RequestLoginAsync))]
+    [BridgeError(nameof(TestService.FetchDataAsync))]
+    [BridgeError(nameof(TestService.LoadProfileAsync))]
     public partial void onError(string error);
 
-    [BridgeError(nameof(MyPlugin.GetCountAsync))]
-    public partial void onCountError();
-}
-```
-
-**이벤트 브릿지** — partial 메서드 자체가 이벤트:
-```csharp
-[NativeBridge("com.example.IPluginEventListener")]
-public partial class MyPluginEventBridge
-{
+    // 이벤트 -- 어트리뷰트 없음, partial 메서드 자체가 이벤트
     public partial void onStateChanged(string state);
-    public partial void onPaymentCompleted(string receipt, int amount);
+    public partial void onProgress(int current, int total);
+    public partial void onCompleted();
 }
 ```
 
-- 메서드명/파라미터를 자유롭게 정의 — Java 인터페이스와 정확히 일치시키면 됨
+- 메서드명/파라미터를 자유롭게 정의 -- Java 인터페이스와 정확히 일치시키면 됨
 - 제너레이터가 `event Action<T>` 선언, partial 메서드 구현, `IDisposable` 자동 생성
-- `NativeService`에서 `CallbackBridgeType = typeof(...)` / `EventBridgeType = typeof(...)` 로 연결
+- `NativeService`에서 `BridgeType = typeof(...)` 로 연결
+- 생성 코드에서 `_nativeBridge` 필드, `Bridge` 프로퍼티, `RegisterBridge` 메서드가 자동 생성
 
 ### BridgeResult / BridgeError
 
@@ -84,26 +85,28 @@ public partial class MyPluginEventBridge
 
 ```csharp
 // 대상 서비스 메서드명 지정 필수 (파라미터 없는 생성자 없음)
-[BridgeResult(nameof(MyPlugin.GetUserAsync))]
+[BridgeResult(nameof(TestService.FetchDataAsync))]
 public partial void onSuccess(string result);
 
-// 동일 타입(int→int)이면 직접 전달, string→다른 타입은 Parse/Deserialize 자동 적용
-[BridgeResult(nameof(MyPlugin.GetCountAsync))]
+// 동일 타입(int->int)이면 직접 전달, string->다른 타입은 Parse/Deserialize 자동 적용
+[BridgeResult(nameof(TestService.GetCountAsync))]
 public partial void onCountResult(int count);
 
 // 에러 핸들러도 대상 메서드 지정 필수
-[BridgeError(nameof(MyPlugin.GetUserAsync))]
+[BridgeError(nameof(TestService.FetchDataAsync))]
 public partial void onError(string error);
 
-// 0-파라미터 에러 핸들러 → () => 람다로 생성
-[BridgeError(nameof(MyPlugin.GetCountAsync))]
+// 0-파라미터 에러 핸들러 -> () => 람다로 생성
+[BridgeError(nameof(TestService.GetCountAsync))]
 public partial void onCountError();
 
-// AllowMultiple = true — 하나의 브릿지 메서드가 여러 서비스 메서드를 처리 가능
-[BridgeResult(nameof(MyPlugin.MethodA))]
-[BridgeResult(nameof(MyPlugin.MethodB))]
+// AllowMultiple = true -- 하나의 브릿지 메서드가 여러 서비스 메서드를 처리 가능
+[BridgeResult(nameof(TestService.RequestLoginAsync))]
+[BridgeResult(nameof(TestService.FetchDataAsync))]
 public partial void onSharedResult(string result);
 ```
+
+어트리뷰트가 없는 메서드는 이벤트로 취급되어 `event Action<T>` 형태로 생성.
 
 ### MockImpl / MockReturn
 
@@ -132,7 +135,7 @@ internal Task<int> MockReturnGetValueAsync() => Task.FromResult(42);
 - **IOSBridgeCallback**: iOS P/Invoke 비동기 콜백 관리. `Register`/`Unregister`/`OnResult`
 
 > Android 프록시는 `NativeBridge` 클래스 자체가 `AndroidJavaProxy`로 생성.
-> 비동기 메서드는 `CallbackBridgeType`으로 지정된 NativeBridge 인스턴스를 사용.
+> 비동기 메서드는 `BridgeType`으로 지정된 NativeBridge 인스턴스를 사용.
 
 ## 직렬화
 
