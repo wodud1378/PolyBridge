@@ -1,0 +1,16 @@
+{
+  "name": "PolyBridge.Sandbox",
+  "rootNamespace": "PolyBridge.Sandbox",
+  "references": [
+    "PolyBridge.Core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

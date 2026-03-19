@@ -1,0 +1,20 @@
+{
+  "name": "com.wodud1378.polybridge.sandbox",
+  "version": "0.0.1",
+  "displayName": "PolyBridge Sandbox",
+  "description": "Runtime debug UI for testing PolyBridge native bridge methods",
+  "unity": "2020.3",
+  "keywords": [
+    "bridge",
+    "native",
+    "debug",
+    "sandbox",
+    "uitoolkit"
+  ],
+  "dependencies": {
+    "com.wodud1378.polybridge.core": "0.0.1"
+  },
+  "author": {
+    "name": "wodud1378"
+  }
+}

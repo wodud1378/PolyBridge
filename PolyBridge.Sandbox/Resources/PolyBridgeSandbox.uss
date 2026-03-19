@@ -1,0 +1,117 @@
+.sandbox-root {
+    flex-grow: 1;
+    background-color: rgb(40, 40, 40);
+    padding: 4px;
+}
+
+.sandbox-header {
+    font-size: 16px;
+    color: rgb(200, 200, 200);
+    -unity-font-style: bold;
+    padding: 8px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(80, 80, 80);
+    margin-bottom: 4px;
+}
+
+.sandbox-tab-bar {
+    flex-direction: row;
+    background-color: rgb(50, 50, 50);
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(80, 80, 80);
+}
+
+.sandbox-tab {
+    padding: 6px 16px;
+    color: rgb(160, 160, 160);
+    background-color: rgb(50, 50, 50);
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+    cursor: link;
+}
+
+.sandbox-tab:hover {
+    color: rgb(220, 220, 220);
+    background-color: rgb(60, 60, 60);
+}
+
+.sandbox-tab--active {
+    color: rgb(255, 255, 255);
+    border-bottom-color: rgb(80, 170, 255);
+}
+
+.sandbox-content {
+    flex-grow: 1;
+    padding: 8px;
+    overflow: scroll;
+}
+
+.sandbox-method-card {
+    background-color: rgb(55, 55, 55);
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 6px;
+    border-width: 1px;
+    border-color: rgb(70, 70, 70);
+}
+
+.sandbox-method-label {
+    font-size: 13px;
+    color: rgb(180, 220, 255);
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+.sandbox-param-row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.sandbox-param-label {
+    width: 80px;
+    color: rgb(160, 160, 160);
+    font-size: 11px;
+}
+
+.sandbox-param-input {
+    flex-grow: 1;
+    background-color: rgb(35, 35, 35);
+    color: rgb(200, 200, 200);
+    border-color: rgb(80, 80, 80);
+    border-radius: 2px;
+    padding: 2px 4px;
+}
+
+.sandbox-invoke-btn {
+    margin-top: 4px;
+    padding: 4px 12px;
+    background-color: rgb(60, 120, 200);
+    color: rgb(255, 255, 255);
+    border-radius: 3px;
+    border-width: 0;
+    cursor: link;
+}
+
+.sandbox-invoke-btn:hover {
+    background-color: rgb(80, 140, 220);
+}
+
+.sandbox-result {
+    margin-top: 4px;
+    padding: 4px 6px;
+    background-color: rgb(30, 30, 30);
+    border-radius: 2px;
+    color: rgb(130, 200, 130);
+    font-size: 11px;
+    white-space: normal;
+}
+
+.sandbox-result--error {
+    color: rgb(230, 100, 100);
+}
+
+.sandbox-result--loading {
+    color: rgb(200, 200, 100);
+}

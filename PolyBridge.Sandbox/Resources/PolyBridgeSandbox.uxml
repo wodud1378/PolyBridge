@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="sandbox-root">
+        <ui:Label text="PolyBridge Sandbox" class="sandbox-header" />
+        <ui:VisualElement name="tab-bar" class="sandbox-tab-bar" />
+        <ui:ScrollView name="content" class="sandbox-content" />
+    </ui:VisualElement>
+</ui:UXML>
