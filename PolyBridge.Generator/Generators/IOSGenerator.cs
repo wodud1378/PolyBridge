@@ -42,7 +42,7 @@ namespace PolyBridge.Generator.Generators
             builder.AppendLine("// iOS does not require explicit object instantiation for static externs.");
         }
 
-        public void GenerateMethodBody(CodeBuilder builder, MethodModel method)
+        public void GenerateMethodBody(CodeBuilder builder, MethodModel method, ServiceModel model)
         {
             if (method.IsAsync)
                 GenerateAsyncBody(builder, method);

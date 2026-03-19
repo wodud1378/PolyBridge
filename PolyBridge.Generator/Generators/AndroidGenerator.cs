@@ -10,10 +10,6 @@ namespace PolyBridge.Generator.Generators
         public string PlatformSymbol => "UNITY_ANDROID";
         public string PlatformSuffix => "AndroidImpl";
 
-        private ServiceModel _currentModel;
-
-        internal void SetCurrentModel(ServiceModel model) => _currentModel = model;
-
         public void GenerateFields(CodeBuilder builder, ServiceModel model)
         {
             builder.AppendField("private", true, "PolyBridge.Core.Runtime.AndroidBridge", "_bridge");
@@ -24,10 +20,10 @@ namespace PolyBridge.Generator.Generators
             builder.AppendLine($"_bridge = new PolyBridge.Core.Runtime.AndroidBridge(\"{model.ClassPath}\");");
         }
 
-        public void GenerateMethodBody(CodeBuilder builder, MethodModel method)
+        public void GenerateMethodBody(CodeBuilder builder, MethodModel method, ServiceModel model)
         {
             if (method.IsAsync)
-                GenerateAsyncBody(builder, method);
+                GenerateAsyncBody(builder, method, model);
             else
                 GenerateSyncBody(builder, method);
         }
@@ -40,7 +36,6 @@ namespace PolyBridge.Generator.Generators
 
         public void GenerateInnerClasses(CodeBuilder builder, ServiceModel model)
         {
-            // No more inner classes — callbacks use NativeBridge
         }
 
         public void GenerateEventBridgeRegistration(CodeBuilder builder, ServiceModel model)
@@ -58,7 +53,7 @@ namespace PolyBridge.Generator.Generators
             builder.AppendLine($"{returnStr}{nativeCall};");
         }
 
-        private void GenerateAsyncBody(CodeBuilder builder, MethodModel method)
+        private static void GenerateAsyncBody(CodeBuilder builder, MethodModel method, ServiceModel model)
         {
             var nativeParamExprs = method.NativeParameterExpressions;
             var paramArgs = !string.IsNullOrEmpty(nativeParamExprs) ? $"{nativeParamExprs}, " : "";
@@ -85,9 +80,9 @@ namespace PolyBridge.Generator.Generators
             builder.AppendLine($"var {tcsVar} = new {tcsType}();");
 
             // Create callback bridge instance and subscribe
-            if (_currentModel?.HasCallbackBridge == true)
+            if (model?.HasCallbackBridge == true)
             {
-                builder.AppendLine($"var callback = new {_currentModel.CallbackBridgeTypeName}();");
+                builder.AppendLine($"var callback = new {model.CallbackBridgeTypeName}();");
             }
             else
             {
@@ -98,10 +93,10 @@ namespace PolyBridge.Generator.Generators
             }
 
             // Find the result mapping for this specific method
-            var resultMapping = _currentModel.GetResultMapping(method.Name);
+            var resultMapping = model.GetResultMapping(method.Name);
             var resultEvent = resultMapping?.EventName ?? "OnResult";
             var resultParams = resultMapping?.Parameters ?? ImmutableArray<ParameterModel>.Empty;
-            var errorMapping = _currentModel.GetErrorMapping(method.Name);
+            var errorMapping = model.GetErrorMapping(method.Name);
             var errorEvent = errorMapping?.EventName ?? "OnError";
             var errorParams = errorMapping?.Parameters ?? ImmutableArray<ParameterModel>.Empty;
 

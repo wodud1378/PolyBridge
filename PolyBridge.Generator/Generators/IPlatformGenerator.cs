@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using PolyBridge.Generator.Builders;
 using PolyBridge.Generator.Models;
 
@@ -10,7 +9,7 @@ namespace PolyBridge.Generator.Generators
         string PlatformSuffix { get; }
         void GenerateFields(CodeBuilder builder, ServiceModel model);
         void GenerateConstructorBody(CodeBuilder builder, ServiceModel model);
-        void GenerateMethodBody(CodeBuilder builder, MethodModel method);
+        void GenerateMethodBody(CodeBuilder builder, MethodModel method, ServiceModel model);
         void GenerateDisposeBody(CodeBuilder builder, ServiceModel model);
         void GenerateInnerClasses(CodeBuilder builder, ServiceModel model);
         void GenerateEventBridgeRegistration(CodeBuilder builder, ServiceModel model);

@@ -32,9 +32,6 @@ namespace PolyBridge.Generator.Models
 
         public string PartialModifier => string.IsNullOrEmpty(AccessModifier) ? "partial" : $"{AccessModifier} partial";
 
-        // For backward compat: Parameters = AllParameters
-        public ImmutableArray<ParameterModel> Parameters => AllParameters;
-
         public string ParameterDeclarations => string.Join(", ", AllParameters.Select(p => $"{p.Type} {p.Name}"));
         public string ParameterNames => string.Join(", ", AllParameters.Select(p => p.Name));
         public string NativeParameterNames => string.Join(", ", NativeParameters.Select(p => p.Name));

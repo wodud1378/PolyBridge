@@ -67,9 +67,6 @@ namespace PolyBridge.Generator.Models
         public ImmutableArray<BridgeMethodModel> Methods { get; } = Methods;
 
         public bool HasBaseClass => !string.IsNullOrEmpty(BaseClassName);
-        public BridgeMethodModel ResultMethod => Methods.FirstOrDefault(m => m.Role == BridgeMethodRole.Result);
-        public BridgeMethodModel ErrorMethod => Methods.FirstOrDefault(m => m.Role == BridgeMethodRole.Error);
-        public bool IsCallbackBridge => ResultMethod != null;
         public string ClassModifier => string.IsNullOrEmpty(ClassAccessModifier) ? "partial" : $"{ClassAccessModifier} partial";
 
         public virtual bool Equals(BridgeModel other)
