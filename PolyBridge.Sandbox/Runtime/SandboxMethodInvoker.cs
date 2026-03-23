@@ -44,9 +44,17 @@ namespace PolyBridge.Sandbox
         {
             try
             {
-                var args = new object[methodInfo.Params.Count];
-                for (var i = 0; i < methodInfo.Params.Count; i++)
-                    args[i] = ConvertParam(paramValues[i], methodInfo.Params[i].Type);
+                // Build args including CancellationToken slots
+                var methodParams = methodInfo.Method.GetParameters();
+                var args = new object[methodParams.Length];
+                var inputIndex = 0;
+                for (var i = 0; i < methodParams.Length; i++)
+                {
+                    if (methodParams[i].ParameterType == typeof(System.Threading.CancellationToken))
+                        args[i] = default(System.Threading.CancellationToken);
+                    else
+                        args[i] = ConvertParam(paramValues[inputIndex++], methodInfo.Params[inputIndex - 1].Type);
+                }
 
                 var result = methodInfo.Method.Invoke(instance, args);
 
