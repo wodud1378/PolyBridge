@@ -1,0 +1,18 @@
+{
+  "name": "PolyBridge.Sandbox.Editor",
+  "rootNamespace": "PolyBridge.Sandbox.Editor",
+  "references": [
+    "PolyBridge.Sandbox"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

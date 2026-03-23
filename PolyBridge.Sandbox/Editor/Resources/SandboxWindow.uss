@@ -1,0 +1,49 @@
+.sandbox-window {
+    padding: 8px;
+}
+
+.sandbox-window__section {
+    margin-bottom: 12px;
+    padding: 8px;
+}
+
+.sandbox-window__section-title {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: rgb(220, 220, 220);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(80, 80, 80);
+}
+
+.sandbox-window__config-path {
+    font-size: 11px;
+    color: rgb(140, 200, 140);
+    margin-bottom: 4px;
+}
+
+.sandbox-window__message {
+    font-size: 11px;
+    color: rgb(200, 160, 100);
+    margin-bottom: 4px;
+}
+
+.sandbox-window__btn {
+    padding: 4px 12px;
+    margin-top: 4px;
+}
+
+.sandbox-window__btn--small {
+    padding: 2px 8px;
+    font-size: 11px;
+    align-self: flex-start;
+}
+
+.sandbox-window__config-missing {
+    display: flex;
+}
+
+.sandbox-window__config-found {
+    display: flex;
+}

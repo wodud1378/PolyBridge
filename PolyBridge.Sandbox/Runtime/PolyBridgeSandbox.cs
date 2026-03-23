@@ -23,12 +23,7 @@ namespace PolyBridge.Sandbox
             if (uiDocument == null)
                 uiDocument = GetComponent<UIDocument>();
 
-            if (uiDocument == null)
-            {
-                uiDocument = gameObject.AddComponent<UIDocument>();
-                if (panelSettings != null)
-                    uiDocument.panelSettings = panelSettings;
-            }
+            if (uiDocument == null) return;
 
             _services = SandboxScanner.ScanAll();
             BuildUI();
