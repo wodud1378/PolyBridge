@@ -321,14 +321,6 @@
         "com.unity.nuget.newtonsoft-json": "3.2.1"
       }
     },
-    "com.wodud1378.polybridge.editor": {
-      "version": "file:../../PolyBridge.Editor",
-      "depth": 0,
-      "source": "local",
-      "dependencies": {
-        "com.wodud1378.polybridge.core": "0.0.1"
-      }
-    },
     "com.wodud1378.polybridge.sandbox": {
       "version": "file:../../PolyBridge.Sandbox",
       "depth": 0,
