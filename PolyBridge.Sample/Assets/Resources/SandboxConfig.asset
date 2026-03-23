@@ -13,6 +13,19 @@ MonoBehaviour:
   m_Name: SandboxConfig
   m_EditorClassIdentifier: PolyBridge.Sandbox::PolyBridge.Sandbox.SandboxConfig
   autoInitialize: 1
-  openGesture: 0
-  shortcutKey: 96
-  requireShift: 1
+  panelSettings: {fileID: 11400000, guid: 955c1e4d55006479a8a6fbfafd1362e5, type: 2}
+  gestures:
+  - rid: 2750104369706041551
+  - rid: 2750104369706041552
+  references:
+    version: 2
+    RefIds:
+    - rid: 2750104369706041551
+      type: {class: KeyboardShortcutGesture, ns: PolyBridge.Sandbox, asm: PolyBridge.Sandbox}
+      data:
+        key: 32
+        requireShift: 1
+    - rid: 2750104369706041552
+      type: {class: MultiTouchGesture, ns: PolyBridge.Sandbox, asm: PolyBridge.Sandbox}
+      data:
+        requiredTouches: 3

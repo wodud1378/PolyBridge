@@ -1,15 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace PolyBridge.Sandbox
 {
-    [CreateAssetMenu(menuName = "PolyBridge/Sandbox Config", fileName = "SandboxConfig")]
     public class SandboxConfig : ScriptableObject
     {
-        public const string ResourcesPathKey = "PolyBridge_SandboxConfig_ResourcesPath";
-        public const string DefaultResourcesPath = "SandboxConfig";
-
         public bool autoInitialize = true;
+        public PanelSettings panelSettings;
 
         [SerializeReference]
         public List<ISandboxGesture> gestures = new()
@@ -18,17 +16,16 @@ namespace PolyBridge.Sandbox
             new MultiTouchGesture { requiredTouches = 3 }
         };
 
+        private static SandboxConfig _loaded;
+
+        private void OnEnable()
+        {
+            _loaded = this;
+        }
+
         public static SandboxConfig Load()
         {
-#if UNITY_EDITOR
-            var path = UnityEditor.EditorPrefs.GetString(ResourcesPathKey, DefaultResourcesPath);
-#else
-            var path = DefaultResourcesPath;
-#endif
-            var config = Resources.Load<SandboxConfig>(path);
-            if (config == null)
-                config = Resources.Load<SandboxConfig>(DefaultResourcesPath);
-            return config;
+            return _loaded;
         }
     }
 }

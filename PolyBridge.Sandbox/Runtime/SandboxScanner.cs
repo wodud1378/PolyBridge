@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -38,27 +37,18 @@ namespace PolyBridge.Sandbox
 
             foreach (var method in serviceType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
-                var buttonAttr = method.GetCustomAttribute<SandboxButtonAttribute>();
-                if (buttonAttr == null) continue;
+                var attr = method.GetCustomAttribute<SandboxMethodAttribute>();
+                if (attr == null) continue;
 
-                var label = buttonAttr.Label ?? method.Name;
+                var label = attr.Label ?? method.Name;
                 var isAsync = typeof(Task).IsAssignableFrom(method.ReturnType);
-
-                var paramAttrs = method.GetCustomAttributes<SandboxParamAttribute>().ToList();
-                var methodParams = method.GetParameters();
                 var parameters = new List<SandboxParamInfo>();
 
-                foreach (var p in methodParams)
+                foreach (var p in method.GetParameters())
                 {
-                    // Skip CancellationToken
                     if (p.ParameterType == typeof(System.Threading.CancellationToken))
                         continue;
-
-                    var paramAttr = paramAttrs.FirstOrDefault(a => a.Name == p.Name);
-                    parameters.Add(new SandboxParamInfo(
-                        p.Name,
-                        paramAttr?.DefaultValue ?? "",
-                        p.ParameterType));
+                    parameters.Add(new SandboxParamInfo(p.Name, p.ParameterType));
                 }
 
                 methods.Add(new SandboxMethodInfo(label, method, parameters, isAsync));

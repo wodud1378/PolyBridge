@@ -23,13 +23,11 @@ namespace PolyBridge.Sandbox
     internal class SandboxParamInfo
     {
         public string Name { get; }
-        public string DefaultValue { get; }
         public Type Type { get; }
 
-        public SandboxParamInfo(string name, string defaultValue, Type type)
+        public SandboxParamInfo(string name, Type type)
         {
             Name = name;
-            DefaultValue = defaultValue;
             Type = type;
         }
     }

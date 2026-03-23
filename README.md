@@ -8,6 +8,7 @@ Unity에서 Android/iOS 네이티브 코드를 호출하기 위한 Roslyn 소스
 |---|---|
 | **PolyBridge.Core** | 런타임 라이브러리 (어트리뷰트, 브릿지, 직렬화) |
 | **PolyBridge.Generator** | Roslyn 소스 제너레이터 (플랫폼별 코드 자동 생성) |
+| **PolyBridge.Sandbox** | 런타임 디버그 UI (네이티브 브릿지 메서드 테스트 도구) |
 | **PolyBridge.Test** | 단위 테스트 |
 
 ## 샘플 코드
@@ -242,6 +243,34 @@ void MyPlugin_getUserAsync(const char* userId, int requestId, BridgeCallback cal
     callback(requestId, result, NULL);
 }
 ```
+
+## Sandbox
+
+네이티브 브릿지 메서드를 런타임에서 테스트할 수 있는 디버그 UI 도구. 에디터 Play Mode와 빌드에서 동일하게 동작.
+
+서비스 클래스에 어트리뷰트를 추가하면 자동으로 테스트 UI가 구성됨:
+
+```csharp
+[NativeService("com.test.TestPlugin", BridgeType = typeof(TestServiceBridge))]
+[Sandbox("Test Service")]
+public partial class TestService
+{
+    [NativeMethod("initialize")]
+    [SandboxButton("Initialize")]
+    public partial Task InitializeAsync();
+
+    [NativeMethod("fetchData")]
+    [SandboxButton("Fetch Data")]
+    [SandboxParam("key", "test-key")]
+    public partial Task<string> FetchDataAsync(string key);
+}
+```
+
+**설정:** `Window > PolyBridge > Sandbox` 에디터 윈도우에서 Config 생성 및 제스처 설정.
+
+**제스처:** 키보드 단축키, 멀티 터치 등 여러 제스처를 동시에 등록 가능. 플레이 모드 또는 앱 실행 시 등록된 제스처 중 하나를 입력하면 Sandbox UI 토글.
+
+자세한 내용은 [PolyBridge.Sandbox/README.md](PolyBridge.Sandbox/README.md) 참고.
 
 ## 빌드
 

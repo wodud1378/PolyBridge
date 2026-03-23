@@ -8,13 +8,11 @@ using PolyBridge.Sandbox;
 public partial class PaymentService
 {
     [NativeMethod("initialize")]
-    [SandboxButton("Initialize")]
+    [SandboxMethod("Initialize")]
     public partial Task InitializeAsync();
 
     [NativeMethod("purchase")]
-    [SandboxButton("Purchase")]
-    [SandboxParam("productId", "item_001")]
-    [SandboxParam("amount", "1000")]
+    [SandboxMethod("Purchase")]
     public partial Task<PaymentResult> PurchaseAsync(string productId, int amount);
 
     // Editor Mock

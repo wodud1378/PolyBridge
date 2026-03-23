@@ -8,13 +8,11 @@ using PolyBridge.Sandbox;
 public partial class LoginService
 {
     [NativeMethod("initialize")]
-    [SandboxButton("Initialize")]
+    [SandboxMethod("Initialize")]
     public partial Task InitializeAsync();
 
     [NativeMethod("login")]
-    [SandboxButton("Login")]
-    [SandboxParam("username", "testuser")]
-    [SandboxParam("password", "1234")]
+    [SandboxMethod("Login")]
     public partial Task<LoginResult> LoginAsync(string username, string password);
 
     // Editor Mock

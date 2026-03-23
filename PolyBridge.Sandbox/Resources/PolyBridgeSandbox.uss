@@ -1,66 +1,80 @@
 .sandbox-root {
     flex-grow: 1;
-    background-color: rgb(40, 40, 40);
-    padding: 4px;
+    background-color: rgb(30, 30, 30);
 }
 
-.sandbox-header {
-    font-size: 16px;
-    color: rgb(200, 200, 200);
-    -unity-font-style: bold;
-    padding: 8px;
-    border-bottom-width: 1px;
-    border-bottom-color: rgb(80, 80, 80);
-    margin-bottom: 4px;
-}
-
+/* Tab Bar */
 .sandbox-tab-bar {
     flex-direction: row;
-    background-color: rgb(50, 50, 50);
+    background-color: rgb(40, 40, 40);
     border-bottom-width: 1px;
-    border-bottom-color: rgb(80, 80, 80);
+    border-bottom-color: rgb(60, 60, 60);
+    flex-shrink: 0;
 }
 
 .sandbox-tab {
-    padding: 6px 16px;
-    color: rgb(160, 160, 160);
-    background-color: rgb(50, 50, 50);
+    padding: 8px 16px;
+    color: rgb(140, 140, 140);
+    background-color: rgba(0, 0, 0, 0);
     border-width: 0;
     border-bottom-width: 2px;
     border-bottom-color: rgba(0, 0, 0, 0);
-    cursor: link;
+    -unity-font-style: normal;
+    font-size: 13px;
 }
 
 .sandbox-tab:hover {
-    color: rgb(220, 220, 220);
-    background-color: rgb(60, 60, 60);
+    color: rgb(200, 200, 200);
+    background-color: rgb(50, 50, 50);
 }
 
 .sandbox-tab--active {
     color: rgb(255, 255, 255);
     border-bottom-color: rgb(80, 170, 255);
+    -unity-font-style: bold;
 }
 
-.sandbox-content {
+/* Content */
+.sandbox-scroll {
     flex-grow: 1;
     padding: 8px;
-    overflow: scroll;
 }
 
+/* Method Card */
 .sandbox-method-card {
-    background-color: rgb(55, 55, 55);
-    border-radius: 4px;
-    padding: 8px;
-    margin-bottom: 6px;
+    background-color: rgb(45, 45, 45);
+    border-radius: 6px;
     border-width: 1px;
-    border-color: rgb(70, 70, 70);
+    border-color: rgb(60, 60, 60);
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+.sandbox-method-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
 }
 
 .sandbox-method-label {
     font-size: 13px;
-    color: rgb(180, 220, 255);
     -unity-font-style: bold;
-    margin-bottom: 4px;
+    color: rgb(180, 220, 255);
+}
+
+.sandbox-method-badge {
+    font-size: 10px;
+    color: rgb(120, 180, 255);
+    background-color: rgb(35, 55, 80);
+    border-radius: 3px;
+    padding: 1px 6px;
+}
+
+/* Params */
+.sandbox-params {
+    margin-bottom: 6px;
+    padding-left: 8px;
 }
 
 .sandbox-param-row {
@@ -70,48 +84,115 @@
 }
 
 .sandbox-param-label {
-    width: 80px;
+    width: 100px;
     color: rgb(160, 160, 160);
     font-size: 11px;
+}
+
+.sandbox-param-type {
+    width: 60px;
+    color: rgb(100, 140, 100);
+    font-size: 10px;
+    -unity-font-style: italic;
 }
 
 .sandbox-param-input {
     flex-grow: 1;
     background-color: rgb(35, 35, 35);
     color: rgb(200, 200, 200);
-    border-color: rgb(80, 80, 80);
-    border-radius: 2px;
-    padding: 2px 4px;
+    border-color: rgb(70, 70, 70);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+/* Buttons */
+.sandbox-btn-row {
+    flex-direction: row;
+    margin-top: 4px;
 }
 
 .sandbox-invoke-btn {
-    margin-top: 4px;
-    padding: 4px 12px;
-    background-color: rgb(60, 120, 200);
+    flex-grow: 1;
+    padding: 5px 12px;
+    background-color: rgb(50, 110, 190);
     color: rgb(255, 255, 255);
-    border-radius: 3px;
+    border-radius: 4px;
     border-width: 0;
-    cursor: link;
+    font-size: 12px;
+    -unity-font-style: bold;
 }
 
 .sandbox-invoke-btn:hover {
-    background-color: rgb(80, 140, 220);
+    background-color: rgb(70, 130, 210);
 }
 
-.sandbox-result {
-    margin-top: 4px;
-    padding: 4px 6px;
-    background-color: rgb(30, 30, 30);
-    border-radius: 2px;
-    color: rgb(130, 200, 130);
+.sandbox-invoke-btn:disabled {
+    background-color: rgb(60, 60, 60);
+    color: rgb(120, 120, 120);
+}
+
+.sandbox-clear-btn {
+    width: 60px;
+    margin-left: 4px;
+    padding: 5px 8px;
+    background-color: rgb(60, 60, 60);
+    color: rgb(180, 180, 180);
+    border-radius: 4px;
+    border-width: 0;
     font-size: 11px;
-    white-space: normal;
+}
+
+.sandbox-clear-btn:hover {
+    background-color: rgb(75, 75, 75);
+}
+
+/* Result */
+.sandbox-result {
+    margin-top: 6px;
+    border-radius: 4px;
+    padding: 6px 8px;
+    background-color: rgb(25, 25, 25);
+    border-width: 1px;
+    border-left-width: 3px;
+}
+
+.sandbox-result--success {
+    border-color: rgb(60, 60, 60);
+    border-left-color: rgb(80, 180, 80);
 }
 
 .sandbox-result--error {
-    color: rgb(230, 100, 100);
+    border-color: rgb(60, 60, 60);
+    border-left-color: rgb(220, 80, 80);
 }
 
-.sandbox-result--loading {
-    color: rgb(200, 200, 100);
+.sandbox-result--running {
+    border-color: rgb(60, 60, 60);
+    border-left-color: rgb(200, 180, 60);
+}
+
+.sandbox-result-status {
+    font-size: 10px;
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.sandbox-result-status--success {
+    color: rgb(80, 180, 80);
+}
+
+.sandbox-result-status--error {
+    color: rgb(220, 80, 80);
+}
+
+.sandbox-result-status--running {
+    color: rgb(200, 180, 60);
+}
+
+.sandbox-result-body {
+    font-size: 11px;
+    color: rgb(180, 180, 180);
+    white-space: normal;
+    min-height: 14px;
 }

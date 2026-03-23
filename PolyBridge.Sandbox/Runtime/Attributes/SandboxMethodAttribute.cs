@@ -3,11 +3,11 @@ using System;
 namespace PolyBridge.Sandbox
 {
     [AttributeUsage(AttributeTargets.Method)]
-    public class SandboxButtonAttribute : Attribute
+    public class SandboxMethodAttribute : Attribute
     {
         public string Label { get; }
 
-        public SandboxButtonAttribute(string label = null)
+        public SandboxMethodAttribute(string label = null)
         {
             Label = label;
         }

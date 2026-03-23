@@ -9,20 +9,17 @@ namespace PolyBridge.Sandbox
     public class PolyBridgeSandbox : MonoBehaviour
     {
         [SerializeField] private UIDocument uiDocument;
-        [SerializeField] private PanelSettings panelSettings;
 
         private readonly Dictionary<Type, object> _instances = new();
         private List<SandboxServiceInfo> _services;
-        private VisualElement _root;
         private VisualElement _tabBar;
-        private VisualElement _content;
+        private ScrollView _scroll;
         private int _activeTab;
 
         private void OnEnable()
         {
             if (uiDocument == null)
                 uiDocument = GetComponent<UIDocument>();
-
             if (uiDocument == null) return;
 
             _services = SandboxScanner.ScanAll();
@@ -31,62 +28,47 @@ namespace PolyBridge.Sandbox
 
         private void BuildUI()
         {
-            _root = uiDocument.rootVisualElement;
-            _root.Clear();
+            var root = uiDocument.rootVisualElement;
+            root.Clear();
 
-            // Load UXML template
-            var template = Resources.Load<VisualTreeAsset>("PolyBridgeSandbox");
-            if (template != null)
-                template.CloneTree(_root);
-            else
-                BuildFallbackStructure(_root);
-
-            // Load stylesheet
             var styleSheet = Resources.Load<StyleSheet>("PolyBridgeSandbox");
             if (styleSheet != null)
-                _root.styleSheets.Add(styleSheet);
+                root.styleSheets.Add(styleSheet);
 
-            _tabBar = _root.Q("tab-bar");
-            _content = _root.Q("content");
+            var container = new VisualElement();
+            container.AddToClassList("sandbox-root");
 
-            if (_tabBar == null || _content == null)
-            {
-                BuildFallbackStructure(_root);
-                _tabBar = _root.Q("tab-bar");
-                _content = _root.Q("content");
-            }
+            // Tab bar
+            _tabBar = new VisualElement();
+            _tabBar.AddToClassList("sandbox-tab-bar");
+            container.Add(_tabBar);
+
+            // Scroll content
+            _scroll = new ScrollView(ScrollViewMode.Vertical);
+            _scroll.AddToClassList("sandbox-scroll");
+            container.Add(_scroll);
 
             if (_services.Count == 0)
             {
-                _content.Add(new Label("No [Sandbox] services found."));
+                var emptyLabel = new Label("No [Sandbox] services found.");
+                emptyLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
+                emptyLabel.style.paddingTop = 16;
+                emptyLabel.style.paddingLeft = 16;
+                _scroll.Add(emptyLabel);
+                root.Add(container);
                 return;
             }
 
             for (var i = 0; i < _services.Count; i++)
             {
                 var index = i;
-                var tab = new Button(() => SelectTab(index))
-                {
-                    text = _services[i].DisplayName
-                };
+                var tab = new Button(() => SelectTab(index)) { text = _services[i].DisplayName };
                 tab.AddToClassList("sandbox-tab");
                 _tabBar.Add(tab);
             }
 
-            SelectTab(0);
-        }
-
-        private static void BuildFallbackStructure(VisualElement root)
-        {
-            root.Clear();
-            var container = new VisualElement();
-            container.AddToClassList("sandbox-root");
-
-            container.Add(new Label("PolyBridge Sandbox") { name = "header" });
-            container.Add(new VisualElement { name = "tab-bar" });
-            container.Add(new ScrollView { name = "content" });
-
             root.Add(container);
+            SelectTab(0);
         }
 
         private void SelectTab(int index)
@@ -102,12 +84,12 @@ namespace PolyBridge.Sandbox
                     tab.RemoveFromClassList("sandbox-tab--active");
             }
 
-            _content.Clear();
+            _scroll.Clear();
             var service = _services[index];
             var instance = GetOrCreateInstance(service);
 
             foreach (var method in service.Methods)
-                _content.Add(BuildMethodCard(instance, method));
+                _scroll.Add(BuildMethodCard(instance, method));
         }
 
         private object GetOrCreateInstance(SandboxServiceInfo service)
@@ -125,61 +107,177 @@ namespace PolyBridge.Sandbox
             var card = new VisualElement();
             card.AddToClassList("sandbox-method-card");
 
+            // Header
+            var header = new VisualElement();
+            header.AddToClassList("sandbox-method-header");
+
             var label = new Label(method.Label);
             label.AddToClassList("sandbox-method-label");
-            card.Add(label);
+            header.Add(label);
 
-            var paramInputs = new List<TextField>();
-            foreach (var param in method.Params)
+            if (method.IsAsync)
             {
-                var row = new VisualElement();
-                row.AddToClassList("sandbox-param-row");
-
-                var paramLabel = new Label(param.Name);
-                paramLabel.AddToClassList("sandbox-param-label");
-                row.Add(paramLabel);
-
-                var input = new TextField();
-                input.value = param.DefaultValue;
-                input.AddToClassList("sandbox-param-input");
-                row.Add(input);
-
-                paramInputs.Add(input);
-                card.Add(row);
+                var badge = new Label("async");
+                badge.AddToClassList("sandbox-method-badge");
+                header.Add(badge);
             }
 
-            var resultLabel = new Label("");
-            resultLabel.AddToClassList("sandbox-result");
-            resultLabel.style.display = DisplayStyle.None;
+            card.Add(header);
 
-            var invokeBtn = new Button(() => InvokeMethod(instance, method, paramInputs, resultLabel))
+            // Params
+            var paramInputs = new List<TextField>();
+            if (method.Params.Count > 0)
             {
-                text = method.IsAsync ? $"{method.Label} (async)" : method.Label
-            };
+                var paramsContainer = new VisualElement();
+                paramsContainer.AddToClassList("sandbox-params");
+
+                foreach (var param in method.Params)
+                {
+                    var row = new VisualElement();
+                    row.AddToClassList("sandbox-param-row");
+
+                    var paramLabel = new Label(param.Name);
+                    paramLabel.AddToClassList("sandbox-param-label");
+                    row.Add(paramLabel);
+
+                    var paramType = new Label(GetTypeLabel(param.Type));
+                    paramType.AddToClassList("sandbox-param-type");
+                    row.Add(paramType);
+
+                    var input = CreateInputField(param.Type);
+                    input.AddToClassList("sandbox-param-input");
+                    row.Add(input);
+
+                    paramInputs.Add(input);
+                    paramsContainer.Add(row);
+                }
+
+                card.Add(paramsContainer);
+            }
+
+            // Result
+            var resultContainer = new VisualElement();
+            resultContainer.style.display = DisplayStyle.None;
+
+            var resultStatus = new Label();
+            resultStatus.AddToClassList("sandbox-result-status");
+            resultContainer.Add(resultStatus);
+
+            var resultBody = new Label();
+            resultBody.AddToClassList("sandbox-result-body");
+            resultContainer.Add(resultBody);
+
+            // Buttons
+            var btnRow = new VisualElement();
+            btnRow.AddToClassList("sandbox-btn-row");
+
+            var invokeBtn = new Button { text = "Execute" };
             invokeBtn.AddToClassList("sandbox-invoke-btn");
-            card.Add(invokeBtn);
-            card.Add(resultLabel);
+
+            var clearBtn = new Button { text = "Clear" };
+            clearBtn.AddToClassList("sandbox-clear-btn");
+            clearBtn.clicked += () =>
+            {
+                resultContainer.style.display = DisplayStyle.None;
+                resultContainer.RemoveFromClassList("sandbox-result--success");
+                resultContainer.RemoveFromClassList("sandbox-result--error");
+                resultContainer.RemoveFromClassList("sandbox-result--running");
+                resultStatus.text = "";
+                resultBody.text = "";
+            };
+
+            invokeBtn.clicked += () => InvokeMethod(instance, method, paramInputs, invokeBtn, resultContainer, resultStatus, resultBody);
+
+            btnRow.Add(invokeBtn);
+            btnRow.Add(clearBtn);
+            card.Add(btnRow);
+
+            resultContainer.AddToClassList("sandbox-result");
+            card.Add(resultContainer);
 
             return card;
         }
 
-        private async void InvokeMethod(object instance, SandboxMethodInfo method, List<TextField> inputs, Label resultLabel)
+        private async void InvokeMethod(
+            object instance, SandboxMethodInfo method, List<TextField> inputs,
+            Button invokeBtn, VisualElement container, Label status, Label body)
         {
-            resultLabel.style.display = DisplayStyle.Flex;
-            resultLabel.RemoveFromClassList("sandbox-result--error");
-            resultLabel.AddToClassList("sandbox-result--loading");
-            resultLabel.text = "Invoking...";
+            // Show running state
+            invokeBtn.SetEnabled(false);
+            container.style.display = DisplayStyle.Flex;
+            var running = SandboxResult.Running();
+            SetResultState(container, status, running);
+            body.text = running.Body;
 
+            // Collect params
             var paramValues = new string[inputs.Count];
             for (var i = 0; i < inputs.Count; i++)
-                paramValues[i] = inputs[i].value;
+                paramValues[i] = GetInputValue(inputs[i]);
 
             var result = await SandboxMethodInvoker.InvokeAsync(instance, method, paramValues);
 
-            resultLabel.RemoveFromClassList("sandbox-result--loading");
-            if (result.StartsWith("ERROR:"))
-                resultLabel.AddToClassList("sandbox-result--error");
-            resultLabel.text = result;
+            SetResultState(container, status, result);
+            body.text = result.Body;
+            invokeBtn.SetEnabled(true);
+        }
+
+        private static void SetResultState(VisualElement container, Label status, SandboxResult result)
+        {
+            container.RemoveFromClassList("sandbox-result--success");
+            container.RemoveFromClassList("sandbox-result--error");
+            container.RemoveFromClassList("sandbox-result--running");
+
+            status.RemoveFromClassList("sandbox-result-status--success");
+            status.RemoveFromClassList("sandbox-result-status--error");
+            status.RemoveFromClassList("sandbox-result-status--running");
+
+            switch (result.Status)
+            {
+                case SandboxResultStatus.Success:
+                    container.AddToClassList("sandbox-result--success");
+                    status.AddToClassList("sandbox-result-status--success");
+                    status.text = "SUCCESS";
+                    break;
+                case SandboxResultStatus.Error:
+                    container.AddToClassList("sandbox-result--error");
+                    status.AddToClassList("sandbox-result-status--error");
+                    status.text = "ERROR";
+                    break;
+                case SandboxResultStatus.Running:
+                    container.AddToClassList("sandbox-result--running");
+                    status.AddToClassList("sandbox-result-status--running");
+                    status.text = "RUNNING...";
+                    break;
+            }
+        }
+
+        private static TextField CreateInputField(Type type)
+        {
+            var field = new TextField();
+            field.style.flexGrow = 1;
+
+            if (type == typeof(int)) field.value = "0";
+            else if (type == typeof(float)) field.value = "0";
+            else if (type == typeof(bool)) field.value = "false";
+            else field.value = "";
+
+            return field;
+        }
+
+        private static string GetInputValue(VisualElement input)
+        {
+            return input is TextField tf ? tf.value : "";
+        }
+
+        private static string GetTypeLabel(Type type)
+        {
+            if (type == typeof(string)) return "string";
+            if (type == typeof(int)) return "int";
+            if (type == typeof(float)) return "float";
+            if (type == typeof(double)) return "double";
+            if (type == typeof(bool)) return "bool";
+            if (type == typeof(long)) return "long";
+            return type.Name;
         }
     }
 }

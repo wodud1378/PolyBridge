@@ -11,35 +11,33 @@ public partial class TestService
     // === 동기 메서드 ===
 
     [NativeMethod("initialize")]
-    [SandboxButton("Initialize")]
+    [SandboxMethod("Initialize")]
     public partial void Initialize();
 
     [NativeMethod("isAvailable")]
-    [SandboxButton("Is Available")]
+    [SandboxMethod("Is Available")]
     public partial bool IsAvailable();
 
     [NativeMethod("android_getDeviceId", "ios_getDeviceId")]
-    [SandboxButton("Get Device ID")]
+    [SandboxMethod("Get Device ID")]
     public partial string GetDeviceId();
 
     // === 비동기 메서드 ===
 
     [NativeMethod("requestLogin")]
-    [SandboxButton("Request Login")]
+    [SandboxMethod("Request Login")]
     public partial Task RequestLoginAsync();
 
     [NativeMethod("fetchData")]
-    [SandboxButton("Fetch Data")]
-    [SandboxParam("key", "test-key")]
+    [SandboxMethod("Fetch Data")]
     public partial Task<string> FetchDataAsync(string key);
 
     [NativeMethod("loadProfile")]
-    [SandboxButton("Load Profile")]
-    [SandboxParam("userId", "user-001")]
+    [SandboxMethod("Load Profile")]
     public partial Task<UserInfo> LoadProfileAsync(string userId, CancellationToken ct);
 
     [NativeMethod("getCount")]
-    [SandboxButton("Get Count")]
+    [SandboxMethod("Get Count")]
     public partial Task<int> GetCountAsync();
 
     // === Editor Mock ===

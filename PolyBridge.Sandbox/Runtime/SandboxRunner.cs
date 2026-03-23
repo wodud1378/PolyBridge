@@ -6,9 +6,16 @@ namespace PolyBridge.Sandbox
 {
     public class SandboxRunner : MonoBehaviour
     {
+        private static SandboxRunner _instance;
+
         private readonly List<ISandboxGestureDetector> _detectors = new();
         private PolyBridgeSandbox _sandbox;
         private bool _isOpen;
+
+        private void Awake()
+        {
+            _instance = this;
+        }
 
         private void Start()
         {
@@ -36,21 +43,18 @@ namespace PolyBridge.Sandbox
 
         public void Toggle()
         {
-            if (_isOpen)
-                Close();
-            else
-                Open();
+            if (_isOpen) Close();
+            else Open();
         }
 
         private void Open()
         {
             if (_sandbox == null)
             {
-                var panelSettings = Resources.Load<PanelSettings>("SandboxPanelSettings");
-
+                var config = SandboxConfig.Load();
                 var uiDoc = gameObject.AddComponent<UIDocument>();
-                if (panelSettings != null)
-                    uiDoc.panelSettings = panelSettings;
+                if (config != null && config.panelSettings != null)
+                    uiDoc.panelSettings = config.panelSettings;
 
                 _sandbox = gameObject.AddComponent<PolyBridgeSandbox>();
             }
@@ -73,6 +77,40 @@ namespace PolyBridge.Sandbox
             if (uiDoc != null) uiDoc.enabled = false;
 
             _isOpen = false;
+        }
+
+        private void OnDestroy()
+        {
+            if (_instance == this)
+                _instance = null;
+        }
+
+        // === Static API ===
+
+        private static SandboxRunner GetOrCreate()
+        {
+            if (_instance != null) return _instance;
+
+            var go = new GameObject("[PolyBridge Sandbox]");
+            DontDestroyOnLoad(go);
+            return go.AddComponent<SandboxRunner>();
+        }
+
+        public static void ShowSandbox()
+        {
+            var runner = GetOrCreate();
+            if (!runner._isOpen) runner.Open();
+        }
+
+        public static void HideSandbox()
+        {
+            if (_instance != null && _instance._isOpen)
+                _instance.Close();
+        }
+
+        public static void ToggleSandbox()
+        {
+            GetOrCreate().Toggle();
         }
     }
 }

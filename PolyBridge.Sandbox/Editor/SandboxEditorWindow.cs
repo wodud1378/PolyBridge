@@ -1,6 +1,9 @@
+using System.Linq;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using PanelSettings = UnityEngine.UIElements.PanelSettings;
 
 namespace PolyBridge.Sandbox.Editor
 {
@@ -8,11 +11,14 @@ namespace PolyBridge.Sandbox.Editor
     {
         private SandboxConfig _config;
 
-        private VisualElement _configMissing;
-        private VisualElement _configFound;
-        private VisualElement _settingsSection;
-        private Label _configPathLabel;
-        private IMGUIContainer _configInspector;
+        private VisualElement _warningContainer;
+        private ObjectField _configField;
+        private ObjectField _panelSettingsField;
+        private Button _createConfigBtn;
+        private Button _createPanelSettingsBtn;
+        private VisualElement _settingsContainer;
+        private Toggle _autoInitToggle;
+        private VisualElement _gestureList;
 
         public static void ShowWindow()
         {
@@ -23,183 +29,290 @@ namespace PolyBridge.Sandbox.Editor
 
         private void CreateGUI()
         {
-            var template = Resources.Load<VisualTreeAsset>("SandboxWindow");
             var styleSheet = Resources.Load<StyleSheet>("SandboxWindow");
-
-            if (template != null)
-                template.CloneTree(rootVisualElement);
-
             if (styleSheet != null)
                 rootVisualElement.styleSheets.Add(styleSheet);
 
-            _configMissing = rootVisualElement.Q("config-missing");
-            _configFound = rootVisualElement.Q("config-found");
-            _settingsSection = rootVisualElement.Q("settings-section");
-            _configPathLabel = rootVisualElement.Q<Label>("config-path");
-            _configInspector = rootVisualElement.Q<IMGUIContainer>("config-inspector");
+            BuildLayout();
+            BindEvents();
 
-            rootVisualElement.Q<Button>("btn-create-config")?.RegisterCallback<ClickEvent>(_ => CreateConfig());
-            rootVisualElement.Q<Button>("btn-select-config")?.RegisterCallback<ClickEvent>(_ => SelectConfig());
-
-            if (_configInspector != null)
-                _configInspector.onGUIHandler = DrawConfigInspector;
-
-            RefreshConfigState();
+            _config = FindConfig();
+            Refresh();
         }
 
-        private void RefreshConfigState()
+        private void BuildLayout()
         {
-            _config = FindConfig();
+            var root = rootVisualElement;
+            root.style.paddingTop = 8;
+            root.style.paddingLeft = 8;
+            root.style.paddingRight = 8;
+
+            // Warnings
+            _warningContainer = new VisualElement();
+            root.Add(_warningContainer);
+
+            // Configuration
+            var configSection = new VisualElement();
+            configSection.Add(CreateSectionTitle("Configuration"));
+
+            // Config row
+            var configRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 4 } };
+            _configField = new ObjectField("Config") { objectType = typeof(SandboxConfig) };
+            _configField.style.flexGrow = 1;
+            configRow.Add(_configField);
+            _createConfigBtn = new Button { text = "Create", style = { width = 60 } };
+            configRow.Add(_createConfigBtn);
+            configSection.Add(configRow);
+
+            // PanelSettings row
+            var panelRow = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 4 } };
+            _panelSettingsField = new ObjectField("Panel Settings") { objectType = typeof(PanelSettings) };
+            _panelSettingsField.style.flexGrow = 1;
+            panelRow.Add(_panelSettingsField);
+            _createPanelSettingsBtn = new Button { text = "Create", style = { width = 60 } };
+            panelRow.Add(_createPanelSettingsBtn);
+            configSection.Add(panelRow);
+
+            root.Add(configSection);
+
+            // Settings
+            _settingsContainer = new VisualElement { style = { marginTop = 8 } };
+            _settingsContainer.Add(CreateSectionTitle("Settings"));
+
+            _autoInitToggle = new Toggle("Auto Initialize");
+            _settingsContainer.Add(_autoInitToggle);
+
+            // Gestures
+            var gestureHeader = new VisualElement { style = { flexDirection = FlexDirection.Row, marginTop = 8, marginBottom = 4 } };
+            gestureHeader.Add(CreateSectionTitle("Gestures"));
+            _settingsContainer.Add(gestureHeader);
+
+            _gestureList = new VisualElement();
+            _settingsContainer.Add(_gestureList);
+
+            var addRow = new VisualElement { style = { flexDirection = FlexDirection.Row, justifyContent = Justify.FlexEnd, marginTop = 4 } };
+            var addKeyboardBtn = new Button { text = "+ Keyboard Shortcut" };
+            addKeyboardBtn.clicked += () => AddGesture(new KeyboardShortcutGesture());
+            var addTouchBtn = new Button { text = "+ Multi Touch" };
+            addTouchBtn.clicked += () => AddGesture(new MultiTouchGesture());
+            addRow.Add(addKeyboardBtn);
+            addRow.Add(addTouchBtn);
+            _settingsContainer.Add(addRow);
+
+            root.Add(_settingsContainer);
+        }
+
+        private void BindEvents()
+        {
+            _configField.RegisterValueChangedCallback(evt =>
+            {
+                _config = evt.newValue as SandboxConfig;
+                if (_config != null && !IsPreloaded(_config))
+                    RegisterPreloadedAsset(_config);
+                Refresh();
+            });
+
+            _panelSettingsField.RegisterValueChangedCallback(evt =>
+            {
+                if (_config == null) return;
+                _config.panelSettings = evt.newValue as PanelSettings;
+                EditorUtility.SetDirty(_config);
+                Refresh();
+            });
+
+            _createConfigBtn.clicked += CreateConfig;
+            _createPanelSettingsBtn.clicked += CreatePanelSettings;
+
+            _autoInitToggle.RegisterValueChangedCallback(evt =>
+            {
+                if (_config == null) return;
+                _config.autoInitialize = evt.newValue;
+                EditorUtility.SetDirty(_config);
+            });
+        }
+
+        private void Refresh()
+        {
+            // Fields
+            _configField.SetValueWithoutNotify(_config);
+            _createConfigBtn.style.display = _config == null ? DisplayStyle.Flex : DisplayStyle.None;
 
             if (_config != null)
             {
-                var assetPath = AssetDatabase.GetAssetPath(_config);
-                var resourcesPath = ExtractResourcesPath(assetPath);
-                EditorPrefs.SetString(SandboxConfig.ResourcesPathKey, resourcesPath);
-
-                if (_configPathLabel != null)
-                    _configPathLabel.text = assetPath;
-
-                SetVisible(_configMissing, false);
-                SetVisible(_configFound, true);
-                SetVisible(_settingsSection, true);
+                _panelSettingsField.SetValueWithoutNotify(_config.panelSettings);
+                _autoInitToggle.SetValueWithoutNotify(_config.autoInitialize);
             }
-            else
+
+            _panelSettingsField.SetEnabled(_config != null);
+            _createPanelSettingsBtn.style.display =
+                _config != null && _config.panelSettings == null ? DisplayStyle.Flex : DisplayStyle.None;
+
+            _settingsContainer.style.display = _config != null ? DisplayStyle.Flex : DisplayStyle.None;
+
+            // Warnings
+            RebuildWarnings();
+
+            // Gestures
+            RebuildGestureList();
+        }
+
+        private void RebuildWarnings()
+        {
+            _warningContainer.Clear();
+
+            if (_config != null && !IsPreloaded(_config))
             {
-                SetVisible(_configMissing, true);
-                SetVisible(_configFound, false);
-                SetVisible(_settingsSection, false);
+                var box = new HelpBox("Config is not in Preloaded Assets. It won't load at runtime.", HelpBoxMessageType.Warning);
+                var btn = new Button { text = "Register to Preloaded Assets" };
+                btn.clicked += () => { RegisterPreloadedAsset(_config); Refresh(); };
+                _warningContainer.Add(box);
+                _warningContainer.Add(btn);
+            }
+
+            if (_config != null && _config.panelSettings == null)
+            {
+                var box = new HelpBox("PanelSettings is required for Sandbox UI to render.", HelpBoxMessageType.Warning);
+                _warningContainer.Add(box);
             }
         }
 
-        private void DrawConfigInspector()
+        private void RebuildGestureList()
         {
+            _gestureList.Clear();
             if (_config == null) return;
-
-            EditorGUI.BeginChangeCheck();
-
-            _config.autoInitialize = EditorGUILayout.Toggle("Auto Initialize", _config.autoInitialize);
-
-            EditorGUILayout.Space(8);
-            EditorGUILayout.LabelField("Gestures", EditorStyles.boldLabel);
 
             for (var i = 0; i < _config.gestures.Count; i++)
             {
                 var gesture = _config.gestures[i];
                 if (gesture == null) continue;
+                var index = i;
 
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField(gesture.DisplayName, GUILayout.Width(140));
+                var card = new VisualElement { style = { marginBottom = 4, paddingLeft = 4, paddingRight = 4, paddingTop = 4, paddingBottom = 4 } };
 
-                if (GUILayout.Button("-", GUILayout.Width(24)))
+                // Header
+                var header = new VisualElement { style = { flexDirection = FlexDirection.Row, justifyContent = Justify.SpaceBetween } };
+                header.Add(new Label(gesture.DisplayName) { style = { unityFontStyleAndWeight = FontStyle.Bold } });
+                var removeBtn = new Button { text = "-", style = { width = 24 } };
+                removeBtn.clicked += () => { _config.gestures.RemoveAt(index); EditorUtility.SetDirty(_config); RebuildGestureList(); };
+                header.Add(removeBtn);
+                card.Add(header);
+
+                // Fields
+                switch (gesture)
                 {
-                    _config.gestures.RemoveAt(i);
-                    i--;
-                    EditorGUILayout.EndHorizontal();
-                    continue;
+                    case KeyboardShortcutGesture kb:
+                    {
+                        var keyField = new EnumField("Key", kb.key);
+                        keyField.RegisterValueChangedCallback(evt => { kb.key = (KeyCode)evt.newValue; EditorUtility.SetDirty(_config); });
+                        card.Add(keyField);
+
+                        var shiftToggle = new Toggle("Require Shift") { value = kb.requireShift };
+                        shiftToggle.RegisterValueChangedCallback(evt => { kb.requireShift = evt.newValue; EditorUtility.SetDirty(_config); });
+                        card.Add(shiftToggle);
+                        break;
+                    }
+                    case MultiTouchGesture mt:
+                    {
+                        var slider = new SliderInt("Touches", 2, 5) { value = mt.requiredTouches, showInputField = true };
+                        slider.RegisterValueChangedCallback(evt => { mt.requiredTouches = evt.newValue; EditorUtility.SetDirty(_config); });
+                        card.Add(slider);
+                        break;
+                    }
                 }
 
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUI.indentLevel++;
-                DrawGestureSettings(gesture);
-                EditorGUI.indentLevel--;
-
-                if (i < _config.gestures.Count - 1)
-                    EditorGUILayout.Space(2);
+                _gestureList.Add(card);
             }
-
-            EditorGUILayout.Space(4);
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("+ Keyboard Shortcut", GUILayout.Width(140)))
-                _config.gestures.Add(new KeyboardShortcutGesture());
-            if (GUILayout.Button("+ Multi Touch", GUILayout.Width(110)))
-                _config.gestures.Add(new MultiTouchGesture());
-            EditorGUILayout.EndHorizontal();
-
-            if (EditorGUI.EndChangeCheck())
-                EditorUtility.SetDirty(_config);
         }
 
-        private static void DrawGestureSettings(ISandboxGesture gesture)
+        private void AddGesture(ISandboxGesture gesture)
         {
-            switch (gesture)
-            {
-                case KeyboardShortcutGesture kb:
-                    kb.key = (KeyCode)EditorGUILayout.EnumPopup("Key", kb.key);
-                    kb.requireShift = EditorGUILayout.Toggle("Require Shift", kb.requireShift);
-                    break;
-                case MultiTouchGesture mt:
-                    mt.requiredTouches = EditorGUILayout.IntSlider("Touches", mt.requiredTouches, 2, 5);
-                    break;
-            }
+            if (_config == null) return;
+            _config.gestures.Add(gesture);
+            EditorUtility.SetDirty(_config);
+            RebuildGestureList();
         }
 
         private void CreateConfig()
         {
             var path = EditorUtility.SaveFilePanelInProject(
-                "Create Sandbox Config",
-                "SandboxConfig",
-                "asset",
+                "Create Sandbox Config", "SandboxConfig", "asset",
                 "Choose location for SandboxConfig");
-
             if (string.IsNullOrEmpty(path)) return;
 
             var config = CreateInstance<SandboxConfig>();
             AssetDatabase.CreateAsset(config, path);
             AssetDatabase.SaveAssets();
+            RegisterPreloadedAsset(config);
 
-            RefreshConfigState();
+            _config = config;
+            CreatePanelSettings();
+            Refresh();
         }
 
-        private void SelectConfig()
+        private void CreatePanelSettings()
         {
-            if (_config != null)
+            if (_config == null) return;
+
+            var configPath = AssetDatabase.GetAssetPath(_config);
+            string path;
+
+            if (!string.IsNullOrEmpty(configPath))
             {
-                Selection.activeObject = _config;
-                EditorGUIUtility.PingObject(_config);
+                var dir = System.IO.Path.GetDirectoryName(configPath);
+                path = $"{dir}/SandboxPanelSettings.asset";
             }
+            else
+            {
+                path = EditorUtility.SaveFilePanelInProject(
+                    "Create Panel Settings", "SandboxPanelSettings", "asset",
+                    "Choose location for PanelSettings");
+                if (string.IsNullOrEmpty(path)) return;
+            }
+
+            var ps = CreateInstance<PanelSettings>();
+            AssetDatabase.CreateAsset(ps, path);
+            _config.panelSettings = ps;
+            EditorUtility.SetDirty(_config);
+            AssetDatabase.SaveAssets();
+            Refresh();
         }
 
         private static SandboxConfig FindConfig()
         {
-            var savedPath = EditorPrefs.GetString(SandboxConfig.ResourcesPathKey, "");
-            if (!string.IsNullOrEmpty(savedPath))
-            {
-                var config = Resources.Load<SandboxConfig>(savedPath);
-                if (config != null) return config;
-            }
-
-            var defaultConfig = Resources.Load<SandboxConfig>(SandboxConfig.DefaultResourcesPath);
-            if (defaultConfig != null) return defaultConfig;
-
             var guids = AssetDatabase.FindAssets("t:SandboxConfig");
-            if (guids.Length > 0)
+            if (guids.Length == 0) return null;
+            var assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+            return AssetDatabase.LoadAssetAtPath<SandboxConfig>(assetPath);
+        }
+
+        private static bool IsPreloaded(Object asset)
+        {
+            return PlayerSettings.GetPreloadedAssets().Contains(asset);
+        }
+
+        private static void RegisterPreloadedAsset(Object asset)
+        {
+            var preloaded = PlayerSettings.GetPreloadedAssets().ToList();
+            if (preloaded.Contains(asset)) return;
+            preloaded.Add(asset);
+            PlayerSettings.SetPreloadedAssets(preloaded.ToArray());
+        }
+
+        private static Label CreateSectionTitle(string text)
+        {
+            return new Label(text)
             {
-                var assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                return AssetDatabase.LoadAssetAtPath<SandboxConfig>(assetPath);
-            }
-
-            return null;
-        }
-
-        private static string ExtractResourcesPath(string assetPath)
-        {
-            var resourcesIndex = assetPath.IndexOf("/Resources/", System.StringComparison.Ordinal);
-            if (resourcesIndex < 0) return SandboxConfig.DefaultResourcesPath;
-
-            var relativePath = assetPath.Substring(resourcesIndex + "/Resources/".Length);
-            if (relativePath.EndsWith(".asset"))
-                relativePath = relativePath.Substring(0, relativePath.Length - ".asset".Length);
-
-            return relativePath;
-        }
-
-        private static void SetVisible(VisualElement element, bool visible)
-        {
-            if (element != null)
-                element.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+                style =
+                {
+                    fontSize = 14,
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    color = new Color(0.86f, 0.86f, 0.86f),
+                    marginBottom = 6,
+                    paddingBottom = 4,
+                    borderBottomWidth = 1,
+                    borderBottomColor = new Color(0.31f, 0.31f, 0.31f)
+                }
+            };
         }
     }
 }
