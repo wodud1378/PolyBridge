@@ -7,23 +7,23 @@ internal partial class TestServiceBridge
     // === 콜백 — BridgeResult/BridgeError로 비동기 메서드 매핑 ===
 
     // 공유 결과 핸들러 — 여러 비동기 메서드에서 사용 (AllowMultiple)
-    [BridgeResult(nameof(TestService.RequestLoginAsync))]
-    [BridgeResult(nameof(TestService.FetchDataAsync))]
-    [BridgeResult(nameof(TestService.LoadProfileAsync))]
+    [NativeBridgeResult(nameof(TestService.RequestLoginAsync))]
+    [NativeBridgeResult(nameof(TestService.FetchDataAsync))]
+    [NativeBridgeResult(nameof(TestService.LoadProfileAsync))]
     public partial void onSuccess(string result);
 
     // 전용 결과 핸들러 — 타입 일치로 변환 없이 직접 전달
-    [BridgeResult(nameof(TestService.GetCountAsync))]
+    [NativeBridgeResult(nameof(TestService.GetCountAsync))]
     public partial void onCountResult(int count);
 
     // 전용 에러 핸들러 — 파라미터 없음
-    [BridgeError(nameof(TestService.GetCountAsync))]
+    [NativeBridgeError(nameof(TestService.GetCountAsync))]
     public partial void onCountError();
 
     // 공유 에러 핸들러
-    [BridgeError(nameof(TestService.RequestLoginAsync))]
-    [BridgeError(nameof(TestService.FetchDataAsync))]
-    [BridgeError(nameof(TestService.LoadProfileAsync))]
+    [NativeBridgeError(nameof(TestService.RequestLoginAsync))]
+    [NativeBridgeError(nameof(TestService.FetchDataAsync))]
+    [NativeBridgeError(nameof(TestService.LoadProfileAsync))]
     public partial void onError(string error);
 
     // === 이벤트 — 어트리뷰트 없음, partial 메서드 자체가 이벤트 ===

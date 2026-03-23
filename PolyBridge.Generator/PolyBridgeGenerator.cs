@@ -101,8 +101,8 @@ namespace PolyBridge.Generator
             var resultMappings = ImmutableArray<CallbackMapping>.Empty;
             var errorMappings = ImmutableArray<CallbackMapping>.Empty;
 
-            var bridgeResultAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.BridgeResultAttribute");
-            var bridgeErrorAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.BridgeErrorAttribute");
+            var bridgeResultAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.NativeBridgeResultAttribute");
+            var bridgeErrorAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.NativeBridgeErrorAttribute");
 
             foreach (var named in serviceAttr.NamedArguments)
             {
@@ -214,8 +214,8 @@ namespace PolyBridge.Generator
             if (bridgeAttr == null) return null;
 
             var androidInterfacePath = bridgeAttr.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? "";
-            var bridgeResultAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.BridgeResultAttribute");
-            var bridgeErrorAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.BridgeErrorAttribute");
+            var bridgeResultAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.NativeBridgeResultAttribute");
+            var bridgeErrorAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.NativeBridgeErrorAttribute");
 
             var methods = classSymbol.GetMembers().OfType<IMethodSymbol>()
                 .Where(m => m.IsPartialDefinition && m.ReturnsVoid)

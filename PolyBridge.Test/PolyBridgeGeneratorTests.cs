@@ -40,10 +40,10 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.LoginAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.LoginAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.LoginAsync))]
+        [NativeBridgeError(nameof(MyPlugin.LoginAsync))]
         public partial void onError(string error);
     }
 
@@ -64,10 +64,10 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.GetUserNameAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.GetUserNameAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.GetUserNameAsync))]
+        [NativeBridgeError(nameof(MyPlugin.GetUserNameAsync))]
         public partial void onError(string error);
     }
 
@@ -88,12 +88,12 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.SendAsync))]
-        [BridgeResult(nameof(MyPlugin.FetchAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.SendAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.FetchAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.SendAsync))]
-        [BridgeError(nameof(MyPlugin.FetchAsync))]
+        [NativeBridgeError(nameof(MyPlugin.SendAsync))]
+        [NativeBridgeError(nameof(MyPlugin.FetchAsync))]
         public partial void onError(string error);
     }
 
@@ -136,10 +136,10 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.FetchAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.FetchAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.FetchAsync))]
+        [NativeBridgeError(nameof(MyPlugin.FetchAsync))]
         public partial void onError(string error);
     }
 
@@ -488,10 +488,10 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.GetUserAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.GetUserAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.GetUserAsync))]
+        [NativeBridgeError(nameof(MyPlugin.GetUserAsync))]
         public partial void onError(string error);
     }
 
@@ -513,10 +513,10 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.SendAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.SendAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.SendAsync))]
+        [NativeBridgeError(nameof(MyPlugin.SendAsync))]
         public partial void onError(string error);
     }
 
@@ -655,10 +655,10 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.GetUserAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.GetUserAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.GetUserAsync))]
+        [NativeBridgeError(nameof(MyPlugin.GetUserAsync))]
         public partial void onError(string error);
     }
 
@@ -681,10 +681,10 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.SendDataAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.SendDataAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.SendDataAsync))]
+        [NativeBridgeError(nameof(MyPlugin.SendDataAsync))]
         public partial void onError(string error);
     }
 
@@ -770,10 +770,10 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.GetValueAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.GetValueAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.GetValueAsync))]
+        [NativeBridgeError(nameof(MyPlugin.GetValueAsync))]
         public partial void onError(string error);
     }
 
@@ -803,12 +803,12 @@ namespace TestApp
     [NativeBridge(""com.test.ICallback"")]
     public partial class MyPluginCallback
     {
-        [BridgeResult(nameof(MyPlugin.SendAsync))]
-        [BridgeResult(nameof(MyPlugin.GetCountAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.SendAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.GetCountAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.SendAsync))]
-        [BridgeError(nameof(MyPlugin.GetCountAsync))]
+        [NativeBridgeError(nameof(MyPlugin.SendAsync))]
+        [NativeBridgeError(nameof(MyPlugin.GetCountAsync))]
         public partial void onError(string error);
     }
 
@@ -1149,10 +1149,10 @@ namespace TestApp
     [NativeBridge(""com.test.IMyCallback"")]
     public partial class MyCustomCallback
     {
-        [BridgeResult(nameof(MyPlugin.FetchAsync))]
+        [NativeBridgeResult(nameof(MyPlugin.FetchAsync))]
         public partial void onSuccess(string result);
 
-        [BridgeError(nameof(MyPlugin.FetchAsync))]
+        [NativeBridgeError(nameof(MyPlugin.FetchAsync))]
         public partial void onError(string error);
     }
 

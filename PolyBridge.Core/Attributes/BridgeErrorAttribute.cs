@@ -3,11 +3,11 @@ using System;
 namespace PolyBridge.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class BridgeErrorAttribute : Attribute
+    public class NativeBridgeErrorAttribute : Attribute
     {
         public string MethodName { get; }
 
-        public BridgeErrorAttribute(string methodName)
+        public NativeBridgeErrorAttribute(string methodName)
         {
             MethodName = methodName;
         }
