@@ -1,29 +1,40 @@
 package com.polybridge.sample.payment
 
-import com.polybridge.sample.IBridgeCallback
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
 class PaymentService {
 
     private var initialized = false
+    private var eventListener: IPaymentBridge? = null
 
-    fun initialize(callback: IBridgeCallback) {
+    fun setEventListener(listener: IPaymentBridge) {
+        eventListener = listener
+    }
+
+    fun removeEventListener(listener: IPaymentBridge) {
+        if (eventListener === listener) eventListener = null
+    }
+
+    fun initialize(callback: IPaymentBridge) {
         thread {
-            Thread.sleep(500) // 초기화 시뮬레이션
+            Thread.sleep(500)
             initialized = true
+            eventListener?.onPaymentStateChanged("initialized")
             callback.onSuccess("initialized")
         }
     }
 
-    fun purchase(productId: String, amount: Int, callback: IBridgeCallback) {
+    fun purchase(productId: String, amount: Int, callback: IPaymentBridge) {
         if (!initialized) {
             callback.onError("PaymentService not initialized")
             return
         }
 
+        eventListener?.onPaymentStateChanged("processing")
+
         thread {
-            Thread.sleep(1000) // 결제 처리 시뮬레이션
+            Thread.sleep(1000)
 
             val result = PaymentResult(
                 transactionId = "txn_${System.currentTimeMillis()}",
@@ -41,6 +52,8 @@ class PaymentService {
                 put("status", result.status)
             }
 
+            eventListener?.onPaymentStateChanged("completed")
+            eventListener?.onReceiptReady(result.transactionId, json.toString())
             callback.onSuccess(json.toString())
         }
     }
