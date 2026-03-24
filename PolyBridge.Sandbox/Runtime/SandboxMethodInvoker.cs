@@ -1,5 +1,7 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
+using PolyBridge.Core.Serialization;
 
 namespace PolyBridge.Sandbox
 {
@@ -15,7 +17,7 @@ namespace PolyBridge.Sandbox
         public SandboxResultStatus Status { get; }
         public string Body { get; }
 
-        public SandboxResult(SandboxResultStatus status, string body)
+        private SandboxResult(SandboxResultStatus status, string body)
         {
             Status = status;
             Body = body;
@@ -28,7 +30,7 @@ namespace PolyBridge.Sandbox
 
     internal static class SandboxMethodInvoker
     {
-        internal static object ConvertParam(string value, Type targetType)
+        private static object ConvertParam(string value, Type targetType)
         {
             if (string.IsNullOrEmpty(value)) return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
             if (targetType == typeof(string)) return value;
@@ -50,8 +52,8 @@ namespace PolyBridge.Sandbox
                 var inputIndex = 0;
                 for (var i = 0; i < methodParams.Length; i++)
                 {
-                    if (methodParams[i].ParameterType == typeof(System.Threading.CancellationToken))
-                        args[i] = default(System.Threading.CancellationToken);
+                    if (methodParams[i].ParameterType == typeof(CancellationToken))
+                        args[i] = CancellationToken.None;
                     else
                         args[i] = ConvertParam(paramValues[inputIndex++], methodInfo.Params[inputIndex - 1].Type);
                 }
@@ -82,13 +84,24 @@ namespace PolyBridge.Sandbox
         private static string FormatResult(object value)
         {
             if (value == null) return "(null)";
-            var str = value.ToString();
 
-            // JSON 감지 — 원문 그대로 반환
-            if (str.StartsWith("{") || str.StartsWith("["))
-                return str;
+            var type = value.GetType();
 
-            return str;
+            // Primitive 타입은 ToString
+            if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal))
+                return value.ToString();
+
+            // struct/class → 등록된 시리얼라이저로 JSON 변환
+            try
+            {
+                return PolyBridgeSerializerRegistry.Serializer.Serialize(value);
+            }
+            catch
+            {
+                // 시리얼라이저 실패 시 ToString 폴백
+            }
+
+            return value.ToString();
         }
     }
 }
