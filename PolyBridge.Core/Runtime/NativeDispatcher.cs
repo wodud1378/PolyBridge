@@ -14,7 +14,10 @@ namespace PolyBridge.Core.Runtime
 
         public static void Post(Action action)
         {
-            _mainContext.Post(_ => action(), null);
+            if (_mainContext != null)
+                _mainContext.Post(_ => action(), null);
+            else
+                action();
         }
     }
 }
