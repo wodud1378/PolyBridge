@@ -932,7 +932,9 @@ using PolyBridge.Core.Attributes;
 
 namespace TestApp
 {
-    [NativeBridge(""com.test.IMyEventListener"")]
+    [NativeBridge(""com.test.IMyEventListener"",
+        EventListenerAdd = ""addListener"",
+        EventListenerRemove = ""removeListener"")]
     public partial class MyPluginEventBridge
     {
         public partial void onReady();
