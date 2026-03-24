@@ -1,6 +1,6 @@
 {
   "name": "com.wodud1378.polybridge.core",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "displayName": "PolyBridge",
   "description": "Source-generated native bridge for Unity (Android/iOS)",
   "unity": "2020.3",
