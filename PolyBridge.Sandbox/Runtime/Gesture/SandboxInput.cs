@@ -6,7 +6,7 @@ using UnityEngine.InputSystem.Controls;
 
 namespace PolyBridge.Sandbox
 {
-    internal interface ISandboxInput
+    public interface ISandboxInput
     {
         bool GetKeyDown(KeyCode key);
         bool GetKey(KeyCode key);
@@ -14,14 +14,14 @@ namespace PolyBridge.Sandbox
     }
 
 #if ENABLE_INPUT_SYSTEM
-    internal class InputSystemInput : ISandboxInput
+    public class InputSystemInput : ISandboxInput
     {
         public bool GetKeyDown(KeyCode key)
         {
             var keyboard = Keyboard.current;
             if (keyboard == null) return false;
             var control = KeyCodeToControl(keyboard, key);
-            return control != null && control.wasPressedThisFrame;
+            return control is { wasPressedThisFrame: true };
         }
 
         public bool GetKey(KeyCode key)
@@ -29,7 +29,7 @@ namespace PolyBridge.Sandbox
             var keyboard = Keyboard.current;
             if (keyboard == null) return false;
             var control = KeyCodeToControl(keyboard, key);
-            return control != null && control.isPressed;
+            return control is { isPressed: true };
         }
 
         public int TouchCount
@@ -48,18 +48,18 @@ namespace PolyBridge.Sandbox
             }
         }
 
-        private static KeyControl KeyCodeToControl(Keyboard keyboard, KeyCode key)
+        private KeyControl KeyCodeToControl(Keyboard keyboard, KeyCode key)
         {
             // A-Z: KeyCode.A(97)~Z(122) → Key.A(15)~Z(40)
-            if (key >= KeyCode.A && key <= KeyCode.Z)
+            if (key is >= KeyCode.A and <= KeyCode.Z)
                 return keyboard[(Key)((int)key - (int)KeyCode.A + (int)Key.A)];
 
             // 0-9: KeyCode.Alpha0(48)~Alpha9(57) → Key.Digit0(41)~Digit9(50)
-            if (key >= KeyCode.Alpha0 && key <= KeyCode.Alpha9)
+            if (key is >= KeyCode.Alpha0 and <= KeyCode.Alpha9)
                 return keyboard[(Key)((int)key - (int)KeyCode.Alpha0 + (int)Key.Digit0)];
 
             // F1-F12: KeyCode.F1(282)~F12(293) → Key.F1(51)~F12(62)
-            if (key >= KeyCode.F1 && key <= KeyCode.F12)
+            if (key is >= KeyCode.F1 and <= KeyCode.F12)
                 return keyboard[(Key)((int)key - (int)KeyCode.F1 + (int)Key.F1)];
 
             // 개별 매핑
@@ -84,7 +84,7 @@ namespace PolyBridge.Sandbox
     }
 #endif
 
-    internal class LegacyInput : ISandboxInput
+    public class LegacyInput : ISandboxInput
     {
         public bool GetKeyDown(KeyCode key) => Input.GetKeyDown(key);
         public bool GetKey(KeyCode key) => Input.GetKey(key);
