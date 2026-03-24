@@ -6,17 +6,19 @@ namespace PolyBridge.Sandbox
     {
         private readonly KeyCode _key;
         private readonly bool _requireShift;
+        private readonly ISandboxInput _input;
 
-        internal KeyboardGestureDetector(KeyCode key, bool requireShift)
+        internal KeyboardGestureDetector(KeyCode key, bool requireShift, ISandboxInput input)
         {
             _key = key;
             _requireShift = requireShift;
+            _input = input;
         }
 
         public bool Detect()
         {
-            if (!Input.GetKeyDown(_key)) return false;
-            if (_requireShift && !Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.RightShift))
+            if (!_input.GetKeyDown(_key)) return false;
+            if (_requireShift && !_input.GetKey(KeyCode.LeftShift) && !_input.GetKey(KeyCode.RightShift))
                 return false;
             return true;
         }

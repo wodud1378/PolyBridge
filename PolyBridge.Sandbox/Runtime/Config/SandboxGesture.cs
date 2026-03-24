@@ -6,7 +6,7 @@ namespace PolyBridge.Sandbox
     public interface ISandboxGesture
     {
         string DisplayName { get; }
-        ISandboxGestureDetector CreateDetector();
+        ISandboxGestureDetector CreateDetector(ISandboxInput input);
     }
 
     [Serializable]
@@ -16,7 +16,7 @@ namespace PolyBridge.Sandbox
         public bool requireShift = true;
 
         public string DisplayName => "Keyboard Shortcut";
-        public ISandboxGestureDetector CreateDetector() => new KeyboardGestureDetector(key, requireShift);
+        public ISandboxGestureDetector CreateDetector(ISandboxInput input) => new KeyboardGestureDetector(key, requireShift, input);
     }
 
     [Serializable]
@@ -25,6 +25,6 @@ namespace PolyBridge.Sandbox
         public int requiredTouches = 3;
 
         public string DisplayName => $"{requiredTouches}-Finger Tap";
-        public ISandboxGestureDetector CreateDetector() => new MultiTouchGestureDetector(requiredTouches);
+        public ISandboxGestureDetector CreateDetector(ISandboxInput input) => new MultiTouchGestureDetector(requiredTouches, input);
     }
 }

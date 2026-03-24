@@ -89,6 +89,24 @@ Config 생성 시 PanelSettings도 같은 위치에 자동 생성. Config를 Ins
 
 에디터 윈도우에서 `+` 버튼으로 추가, `-` 버튼으로 삭제.
 
+### 입력 시스템 호환성
+
+Legacy Input Manager와 새로운 Input System 패키지 모두 지원. Input System 패키지 설치 시 자동으로 감지되어 전환됨.
+
+| 입력 시스템 | 키보드 지원 | 터치 지원 |
+|---|---|---|
+| **Legacy Input Manager** | 모든 KeyCode 지원 | 지원 |
+| **Input System** | 주요 키만 지원 (알파벳, 숫자, F키, 특수키 일부) | 지원 |
+
+Input System 사용 시 일부 특수 키가 매핑되지 않을 수 있음. 기본 단축키(BackQuote + Shift)는 양쪽 모두 지원.
+
+**Input System에서 지원되는 키:**
+- `A`~`Z` (전체)
+- `Alpha0`~`Alpha9` (전체)
+- `F1`~`F12` (전체)
+- `BackQuote`, `Escape`, `Space`, `Tab`, `Return`, `Backspace`, `Delete`
+- `LeftShift`, `RightShift`, `LeftControl`, `RightControl`, `LeftAlt`, `RightAlt`
+
 ## 동작 흐름
 
 ```

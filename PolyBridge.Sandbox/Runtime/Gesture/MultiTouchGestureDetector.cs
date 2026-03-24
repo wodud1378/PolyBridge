@@ -1,20 +1,20 @@
-using UnityEngine;
-
 namespace PolyBridge.Sandbox
 {
     public class MultiTouchGestureDetector : ISandboxGestureDetector
     {
         private readonly int _requiredTouches;
+        private readonly ISandboxInput _input;
         private bool _wasTouching;
 
-        internal MultiTouchGestureDetector(int requiredTouches)
+        internal MultiTouchGestureDetector(int requiredTouches, ISandboxInput input)
         {
             _requiredTouches = requiredTouches;
+            _input = input;
         }
 
         public bool Detect()
         {
-            var touching = Input.touchCount >= _requiredTouches;
+            var touching = _input.TouchCount >= _requiredTouches;
 
             if (_wasTouching && !touching)
             {

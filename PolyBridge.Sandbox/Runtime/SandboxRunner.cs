@@ -22,10 +22,11 @@ namespace PolyBridge.Sandbox
             var config = SandboxConfig.Load();
             if (config == null) return;
 
+            var input = SandboxInputFactory.Create();
             foreach (var gesture in config.gestures)
             {
                 if (gesture != null)
-                    _detectors.Add(gesture.CreateDetector());
+                    _detectors.Add(gesture.CreateDetector(input));
             }
         }
 
