@@ -270,6 +270,10 @@ namespace PolyBridge.Sandbox.Editor
             }
 
             var ps = CreateInstance<PanelSettings>();
+            ps.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+            ps.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+            ps.referenceResolution = new Vector2Int(1920, 1080);
+            ps.match = 1f;
             AssetDatabase.CreateAsset(ps, path);
             _config.panelSettings = ps;
             EditorUtility.SetDirty(_config);

@@ -1,0 +1,75 @@
+.sandbox-root {
+    flex-grow: 1;
+    background-color: rgb(30, 30, 30);
+}
+
+.sandbox-tab-bar {
+    flex-direction: row;
+    background-color: rgb(40, 40, 40);
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(60, 60, 60);
+    flex-shrink: 0;
+}
+
+.sandbox-tab {
+    padding: 8px 16px;
+    color: rgb(140, 140, 140);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+    -unity-font-style: normal;
+    font-size: 13px;
+}
+
+.sandbox-tab:hover {
+    color: rgb(200, 200, 200);
+    background-color: rgb(50, 50, 50);
+}
+
+.sandbox-tab--active {
+    color: rgb(255, 255, 255);
+    border-bottom-color: rgb(80, 170, 255);
+    -unity-font-style: bold;
+}
+
+.sandbox-panel-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(40, 40, 40);
+    padding: 4px 8px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(60, 60, 60);
+}
+
+.sandbox-panel-title {
+    font-size: 12px;
+    -unity-font-style: bold;
+    color: rgb(180, 180, 180);
+}
+
+.sandbox-console-state-btn {
+    width: 24px;
+    height: 20px;
+    font-size: 12px;
+    color: rgb(140, 140, 140);
+    background-color: rgb(50, 50, 50);
+    border-width: 1px;
+    border-color: rgb(65, 65, 65);
+    border-radius: 3px;
+    margin-left: 2px;
+    padding: 0;
+    -unity-text-align: middle-center;
+}
+
+.sandbox-console-state-btn:hover {
+    color: rgb(220, 220, 220);
+    background-color: rgb(65, 65, 65);
+}
+
+.sandbox-console-state-btn--active {
+    color: rgb(255, 255, 255);
+    background-color: rgb(60, 100, 160);
+    border-color: rgb(80, 130, 200);
+}

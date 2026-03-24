@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement class="sandbox-panel-header">
+        <ui:Label text="Console" class="sandbox-panel-title" />
+        <ui:VisualElement name="console-state-buttons" style="flex-direction: row;" />
+    </ui:VisualElement>
+    <ui:VisualElement name="console-toolbar" class="sandbox-console-toolbar" />
+    <ui:ScrollView name="console-scroll" class="sandbox-console-scroll" />
+</ui:UXML>

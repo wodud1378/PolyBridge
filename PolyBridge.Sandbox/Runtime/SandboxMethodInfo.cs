@@ -32,17 +32,36 @@ namespace PolyBridge.Sandbox
         }
     }
 
+    internal class SandboxEventInfo
+    {
+        public string Name { get; }
+        public EventInfo Event { get; }
+
+        public SandboxEventInfo(string name, EventInfo eventInfo)
+        {
+            Name = name;
+            Event = eventInfo;
+        }
+    }
+
     internal class SandboxServiceInfo
     {
         public string DisplayName { get; }
         public Type ServiceType { get; }
         public List<SandboxMethodInfo> Methods { get; }
+        public List<SandboxEventInfo> Events { get; }
+        public PropertyInfo BridgeProperty { get; }
 
-        public SandboxServiceInfo(string displayName, Type serviceType, List<SandboxMethodInfo> methods)
+        public bool HasEvents => Events.Count > 0;
+
+        public SandboxServiceInfo(string displayName, Type serviceType,
+            List<SandboxMethodInfo> methods, List<SandboxEventInfo> events, PropertyInfo bridgeProperty)
         {
             DisplayName = displayName;
             ServiceType = serviceType;
             Methods = methods;
+            Events = events;
+            BridgeProperty = bridgeProperty;
         }
     }
 }

@@ -1,0 +1,98 @@
+.sandbox-console {
+    background-color: rgb(25, 25, 25);
+}
+
+.sandbox-console-toolbar {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgb(38, 38, 38);
+    padding: 3px 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(55, 55, 55);
+}
+
+.sandbox-console-filter {
+    padding: 2px 8px;
+    font-size: 10px;
+    color: rgb(140, 140, 140);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 1px;
+    border-color: rgb(60, 60, 60);
+    border-radius: 3px;
+    margin-right: 3px;
+}
+
+.sandbox-console-filter:hover {
+    color: rgb(200, 200, 200);
+    border-color: rgb(100, 100, 100);
+}
+
+.sandbox-console-filter--active {
+    color: rgb(255, 255, 255);
+    background-color: rgb(50, 70, 100);
+    border-color: rgb(80, 120, 180);
+}
+
+.sandbox-console-search {
+    flex-grow: 1;
+    height: 18px;
+    font-size: 11px;
+    background-color: rgb(30, 30, 30);
+    color: rgb(180, 180, 180);
+    border-color: rgb(55, 55, 55);
+    border-radius: 3px;
+    margin-left: 4px;
+    padding: 0 4px;
+}
+
+.sandbox-console-clear {
+    padding: 2px 6px;
+    font-size: 10px;
+    color: rgb(140, 140, 140);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    margin-left: 4px;
+}
+
+.sandbox-console-scroll {
+    flex-grow: 1;
+}
+
+.sandbox-log-entry {
+    flex-direction: row;
+    padding: 2px 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(35, 35, 35);
+}
+
+.sandbox-log-entry:hover {
+    background-color: rgb(35, 35, 35);
+}
+
+.sandbox-log-time {
+    width: 60px;
+    font-size: 10px;
+    color: rgb(100, 100, 100);
+}
+
+.sandbox-log-level {
+    width: 10px;
+    font-size: 10px;
+    margin-right: 6px;
+}
+
+.sandbox-log-level--info { color: rgb(200, 200, 200); }
+.sandbox-log-level--warning { color: rgb(230, 200, 50); }
+.sandbox-log-level--error { color: rgb(230, 80, 80); }
+.sandbox-log-level--native { color: rgb(100, 200, 255); }
+
+.sandbox-log-message {
+    flex-grow: 1;
+    font-size: 11px;
+    white-space: normal;
+}
+
+.sandbox-log-message--info { color: rgb(200, 200, 200); }
+.sandbox-log-message--warning { color: rgb(230, 200, 50); }
+.sandbox-log-message--error { color: rgb(230, 80, 80); }
+.sandbox-log-message--native { color: rgb(100, 200, 255); }

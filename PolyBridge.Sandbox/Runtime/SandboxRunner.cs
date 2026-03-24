@@ -61,9 +61,9 @@ namespace PolyBridge.Sandbox
             }
             else
             {
-                _sandbox.enabled = true;
                 var uiDoc = GetComponent<UIDocument>();
                 if (uiDoc != null) uiDoc.enabled = true;
+                _sandbox.enabled = true;
             }
 
             _isOpen = true;
