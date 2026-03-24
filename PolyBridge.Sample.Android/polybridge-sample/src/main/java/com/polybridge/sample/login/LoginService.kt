@@ -1,35 +1,55 @@
 package com.polybridge.sample.login
 
-import com.polybridge.sample.IBridgeCallback
 import org.json.JSONObject
 import kotlin.concurrent.thread
 
 class LoginService {
 
     private var initialized = false
+    private var currentUser: String? = null
+    private var eventListener: ILoginBridge? = null
 
-    fun initialize(callback: IBridgeCallback) {
+    fun setSessionListener(listener: ILoginBridge) {
+        eventListener = listener
+    }
+
+    fun removeSessionListener(listener: ILoginBridge) {
+        if (eventListener === listener) eventListener = null
+    }
+
+    // 동기
+    fun isLoggedIn(): Boolean = currentUser != null
+
+    fun getCurrentUser(): String = currentUser ?: ""
+
+    // 비동기 — void
+    fun initialize(callback: ILoginBridge) {
         thread {
-            Thread.sleep(300) // 초기화 시뮬레이션
+            Thread.sleep(300)
             initialized = true
+            eventListener?.onSessionStateChanged("initialized")
             callback.onSuccess("initialized")
         }
     }
 
-    fun login(username: String, password: String, callback: IBridgeCallback) {
+    // 비동기 — 복합 타입
+    fun login(username: String, password: String, callback: ILoginBridge) {
         if (!initialized) {
             callback.onError("LoginService not initialized")
             return
         }
 
+        eventListener?.onSessionStateChanged("authenticating")
+
         thread {
-            Thread.sleep(800) // 로그인 처리 시뮬레이션
+            Thread.sleep(800)
 
             if (username.isBlank() || password.isBlank()) {
                 callback.onError("Username and password are required")
                 return@thread
             }
 
+            currentUser = username
             val result = LoginResult(
                 userId = "user_${username.hashCode().toUInt()}",
                 displayName = username,
@@ -44,7 +64,23 @@ class LoginService {
                 put("expiresIn", result.expiresIn)
             }
 
+            eventListener?.onSessionStateChanged("logged_in")
             callback.onSuccess(json.toString())
+        }
+    }
+
+    // 비동기 — void
+    fun logout(callback: ILoginBridge) {
+        if (!initialized) {
+            callback.onError("LoginService not initialized")
+            return
+        }
+
+        thread {
+            Thread.sleep(200)
+            currentUser = null
+            eventListener?.onSessionStateChanged("logged_out")
+            callback.onSuccess("logged_out")
         }
     }
 }

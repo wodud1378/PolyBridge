@@ -16,6 +16,13 @@ class PaymentService {
         if (eventListener === listener) eventListener = null
     }
 
+    // 동기 — 반환값 없음
+    fun isInitialized(): Boolean = initialized
+
+    // 동기 — 반환값
+    fun getServiceName(): String = "PaymentService-v1.0"
+
+    // 비동기 — void
     fun initialize(callback: IPaymentBridge) {
         thread {
             Thread.sleep(500)
@@ -25,6 +32,7 @@ class PaymentService {
         }
     }
 
+    // 비동기 — 반환값 (복합 타입)
     fun purchase(productId: String, amount: Int, callback: IPaymentBridge) {
         if (!initialized) {
             callback.onError("PaymentService not initialized")
@@ -55,6 +63,19 @@ class PaymentService {
             eventListener?.onPaymentStateChanged("completed")
             eventListener?.onReceiptReady(result.transactionId, json.toString())
             callback.onSuccess(json.toString())
+        }
+    }
+
+    // 비동기 — 반환값 (primitive string)
+    fun getReceipt(transactionId: String, callback: IPaymentBridge) {
+        if (!initialized) {
+            callback.onError("PaymentService not initialized")
+            return
+        }
+
+        thread {
+            Thread.sleep(300)
+            callback.onSuccess("{\"transactionId\":\"$transactionId\",\"receipt\":\"receipt_${System.currentTimeMillis()}\"}")
         }
     }
 }
