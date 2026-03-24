@@ -1,5 +1,9 @@
 # PolyBridge
 
+![sample-login](https://github.com/user-attachments/assets/31805add-368e-4293-830c-b8e9ccbe733c)
+
+![sample-timer](https://github.com/user-attachments/assets/a086bcf9-acf7-494e-8258-563974534f56)
+
 Unity에서 Android/iOS 네이티브 코드를 호출하기 위한 Roslyn 소스 제너레이터 기반 브릿지 라이브러리.
 
 ## 구조
