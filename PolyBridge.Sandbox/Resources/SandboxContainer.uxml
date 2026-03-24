@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:VisualElement class="sandbox-root">
         <ui:VisualElement name="tab-bar" class="sandbox-tab-bar" />
-        <ui:VisualElement name="method-panel" />
+        <ui:VisualElement name="method-panel" class="sandbox-method-panel" />
         <ui:VisualElement name="console-panel" class="sandbox-console" />
     </ui:VisualElement>
 </ui:UXML>

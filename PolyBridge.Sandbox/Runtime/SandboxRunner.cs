@@ -19,14 +19,27 @@ namespace PolyBridge.Sandbox
 
         private void Start()
         {
-            var config = SandboxConfig.Load();
-            if (config == null) return;
-
-            var input = SandboxInputFactory.Create();
-            foreach (var gesture in config.gestures)
+            try
             {
-                if (gesture != null)
-                    _detectors.Add(gesture.CreateDetector(input));
+                var config = SandboxConfig.Load();
+                if (config == null)
+                {
+                    Debug.LogWarning("[PolyBridge Sandbox] SandboxConfig not found.");
+                    return;
+                }
+
+                var input = SandboxInputFactory.Create();
+                foreach (var gesture in config.gestures)
+                {
+                    if (gesture != null)
+                        _detectors.Add(gesture.CreateDetector(input));
+                }
+
+                Debug.Log($"[PolyBridge Sandbox] Runner started with {_detectors.Count} gesture detector(s).");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[PolyBridge Sandbox] Runner start failed: {e}");
             }
         }
 
@@ -50,23 +63,32 @@ namespace PolyBridge.Sandbox
 
         private void Open()
         {
-            if (_sandbox == null)
+            try
             {
-                var config = SandboxConfig.Load();
-                var uiDoc = gameObject.AddComponent<UIDocument>();
-                if (config != null && config.panelSettings != null)
-                    uiDoc.panelSettings = config.panelSettings;
+                if (_sandbox == null)
+                {
+                    var config = SandboxConfig.Load();
+                    var uiDoc = gameObject.AddComponent<UIDocument>();
+                    if (config != null && config.panelSettings != null)
+                        uiDoc.panelSettings = config.panelSettings;
 
-                _sandbox = gameObject.AddComponent<PolyBridgeSandbox>();
+                    _sandbox = gameObject.AddComponent<PolyBridgeSandbox>();
+                    Debug.Log("[PolyBridge Sandbox] Opened (first time).");
+                }
+                else
+                {
+                    var uiDoc = GetComponent<UIDocument>();
+                    if (uiDoc != null) uiDoc.enabled = true;
+                    _sandbox.enabled = true;
+                    Debug.Log("[PolyBridge Sandbox] Opened.");
+                }
+
+                _isOpen = true;
             }
-            else
+            catch (System.Exception e)
             {
-                var uiDoc = GetComponent<UIDocument>();
-                if (uiDoc != null) uiDoc.enabled = true;
-                _sandbox.enabled = true;
+                Debug.LogError($"[PolyBridge Sandbox] Failed to open: {e}");
             }
-
-            _isOpen = true;
         }
 
         private void Close()

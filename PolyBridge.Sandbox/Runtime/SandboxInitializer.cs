@@ -7,12 +7,21 @@ namespace PolyBridge.Sandbox
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()
         {
-            var config = SandboxConfig.Load();
-            if (config == null || !config.autoInitialize) return;
+            try
+            {
+                var config = SandboxConfig.Load();
+                if (config == null || !config.autoInitialize) return;
 
-            var go = new GameObject("[PolyBridge Sandbox]");
-            Object.DontDestroyOnLoad(go);
-            go.AddComponent<SandboxRunner>();
+                Debug.Log("[PolyBridge Sandbox] Initializing...");
+                var go = new GameObject("[PolyBridge Sandbox]");
+                Object.DontDestroyOnLoad(go);
+                go.AddComponent<SandboxRunner>();
+                Debug.Log("[PolyBridge Sandbox] Initialized.");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[PolyBridge Sandbox] Failed to initialize: {e}");
+            }
         }
     }
 }

@@ -3,6 +3,12 @@
     background-color: rgb(30, 30, 30);
 }
 
+.sandbox-method-panel {
+    flex-shrink: 1;
+    flex-basis: 0;
+    overflow: hidden;
+}
+
 .sandbox-tab-bar {
     flex-direction: row;
     background-color: rgb(40, 40, 40);
@@ -12,14 +18,14 @@
 }
 
 .sandbox-tab {
-    padding: 8px 16px;
+    padding: 12px 20px;
     color: rgb(140, 140, 140);
     background-color: rgba(0, 0, 0, 0);
     border-width: 0;
-    border-bottom-width: 2px;
+    border-bottom-width: 3px;
     border-bottom-color: rgba(0, 0, 0, 0);
     -unity-font-style: normal;
-    font-size: 13px;
+    font-size: 16px;
 }
 
 .sandbox-tab:hover {
@@ -38,27 +44,27 @@
     justify-content: space-between;
     align-items: center;
     background-color: rgb(40, 40, 40);
-    padding: 4px 8px;
+    padding: 8px 12px;
     border-bottom-width: 1px;
     border-bottom-color: rgb(60, 60, 60);
 }
 
 .sandbox-panel-title {
-    font-size: 12px;
+    font-size: 15px;
     -unity-font-style: bold;
     color: rgb(180, 180, 180);
 }
 
 .sandbox-console-state-btn {
-    width: 24px;
-    height: 20px;
-    font-size: 12px;
+    width: 36px;
+    height: 30px;
+    font-size: 16px;
     color: rgb(140, 140, 140);
     background-color: rgb(50, 50, 50);
     border-width: 1px;
     border-color: rgb(65, 65, 65);
-    border-radius: 3px;
-    margin-left: 2px;
+    border-radius: 4px;
+    margin-left: 3px;
     padding: 0;
     -unity-text-align: middle-center;
 }
@@ -72,4 +78,32 @@
     color: rgb(255, 255, 255);
     background-color: rgb(60, 100, 160);
     border-color: rgb(80, 130, 200);
+}
+
+/* Sub Tabs */
+.sandbox-sub-tab-bar {
+    flex-direction: row;
+    background-color: rgb(38, 38, 38);
+    padding: 0 12px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgb(55, 55, 55);
+}
+
+.sandbox-sub-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+    color: rgb(120, 120, 120);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(0, 0, 0, 0);
+}
+
+.sandbox-sub-tab:hover {
+    color: rgb(200, 200, 200);
+}
+
+.sandbox-sub-tab--active {
+    color: rgb(255, 255, 255);
+    border-bottom-color: rgb(100, 180, 100);
 }

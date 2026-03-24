@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace PolyBridge.Sandbox
 {
@@ -19,14 +20,24 @@ namespace PolyBridge.Sandbox
 
                 foreach (var type in types)
                 {
-                    var sandboxAttr = type.GetCustomAttribute<SandboxAttribute>();
-                    if (sandboxAttr == null) continue;
+                    try
+                    {
+                        var sandboxAttr = type.GetCustomAttribute<SandboxAttribute>();
+                        if (sandboxAttr == null) continue;
 
-                    var methods = ScanMethods(type);
-                    var (events, bridgeProp) = ScanEvents(type);
+                        var methods = ScanMethods(type);
+                        var (events, bridgeProp) = ScanEvents(type);
 
-                    if (methods.Count > 0 || events.Count > 0)
-                        result.Add(new SandboxServiceInfo(sandboxAttr.DisplayName, type, methods, events, bridgeProp));
+                        if (methods.Count > 0 || events.Count > 0)
+                        {
+                            result.Add(new SandboxServiceInfo(sandboxAttr.DisplayName, type, methods, events, bridgeProp));
+                            Debug.Log($"[PolyBridge Sandbox] Found service: {sandboxAttr.DisplayName} ({methods.Count} methods, {events.Count} events)");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"[PolyBridge Sandbox] Failed to scan type {type.FullName}: {e}");
+                    }
                 }
             }
 
