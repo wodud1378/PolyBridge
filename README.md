@@ -14,31 +14,33 @@ Unity에서 Android/iOS 네이티브 코드를 호출하기 위한 Roslyn 소스
 ## 샘플 코드
 
 ```csharp
-// 통합 브릿지 — 콜백(BridgeResult/BridgeError) + 이벤트를 하나의 클래스에서 처리
-[NativeBridge("com.test.service.IServiceBridge")]
+// 통합 브릿지 -- 콜백(NativeBridgeResult/NativeBridgeError) + 이벤트를 하나의 클래스에서 처리
+[NativeBridge("com.test.service.IServiceBridge",
+    EventListenerAdd = "addListener",
+    EventListenerRemove = "removeListener")]
 internal partial class TestServiceBridge
 {
-    // 콜백 — BridgeResult/BridgeError로 비동기 메서드 매핑
-    [BridgeResult(nameof(TestService.RequestLoginAsync))]
-    [BridgeResult(nameof(TestService.FetchDataAsync))]
+    // 콜백 -- NativeBridgeResult/NativeBridgeError로 비동기 메서드 매핑
+    [NativeBridgeResult(nameof(TestService.RequestLoginAsync))]
+    [NativeBridgeResult(nameof(TestService.FetchDataAsync))]
     public partial void onSuccess(string result);
 
-    [BridgeResult(nameof(TestService.GetCountAsync))]
+    [NativeBridgeResult(nameof(TestService.GetCountAsync))]
     public partial void onCountResult(int count);
 
-    [BridgeError(nameof(TestService.RequestLoginAsync))]
-    [BridgeError(nameof(TestService.FetchDataAsync))]
+    [NativeBridgeError(nameof(TestService.RequestLoginAsync))]
+    [NativeBridgeError(nameof(TestService.FetchDataAsync))]
     public partial void onError(string error);
 
-    [BridgeError(nameof(TestService.GetCountAsync))]
+    [NativeBridgeError(nameof(TestService.GetCountAsync))]
     public partial void onCountError();
 
-    // 이벤트 — 어트리뷰트 없음, partial 메서드 자체가 이벤트
+    // 이벤트 -- 어트리뷰트 없음, partial 메서드 자체가 이벤트
     public partial void onStateChanged(string state);
     public partial void onProgress(int current, int total);
 }
 
-// 서비스 — BridgeType 하나로 콜백/이벤트 통합
+// 서비스 -- BridgeType 하나로 콜백/이벤트 통합
 [NativeService("com.test.service.TestPlugin",
     BridgeType = typeof(TestServiceBridge))]
 public partial class TestService
@@ -79,31 +81,34 @@ public partial Task<string> FetchAsync();
 
 하나의 NativeBridge 클래스에서 콜백과 이벤트를 함께 처리:
 
-- **콜백 메서드** — `[BridgeResult(nameof(Method))]` / `[BridgeError(nameof(Method))]` 어트리뷰트가 붙은 메서드. 비동기 서비스 메서드의 성공/실패 결과를 수신
-- **이벤트 메서드** — 어트리뷰트가 없는 메서드. partial 메서드 자체가 이벤트로 생성
+- **콜백 메서드** -- `[NativeBridgeResult(nameof(Method))]` / `[NativeBridgeError(nameof(Method))]` 어트리뷰트가 붙은 메서드. 비동기 서비스 메서드의 성공/실패 결과를 수신
+- **이벤트 메서드** -- 어트리뷰트가 없는 메서드. partial 메서드 자체가 이벤트로 생성
+- **EventListenerAdd / EventListenerRemove** -- 이벤트 메서드가 있을 때 네이티브 측에 리스너를 등록/해제하는 메서드명을 지정. `HasEventListener` 판정은 `EventListenerAdd` 존재 여부로 결정
 
 ```csharp
-[NativeBridge("com.test.service.IServiceBridge")]
+[NativeBridge("com.test.service.IServiceBridge",
+    EventListenerAdd = "addListener",
+    EventListenerRemove = "removeListener")]
 internal partial class TestServiceBridge
 {
-    // 콜백 — 비동기 메서드별 결과/에러 수신 (AllowMultiple = true)
-    [BridgeResult(nameof(TestService.RequestLoginAsync))]
-    [BridgeResult(nameof(TestService.FetchDataAsync))]
-    [BridgeResult(nameof(TestService.LoadProfileAsync))]
+    // 콜백 -- 비동기 메서드별 결과/에러 수신 (AllowMultiple = true)
+    [NativeBridgeResult(nameof(TestService.RequestLoginAsync))]
+    [NativeBridgeResult(nameof(TestService.FetchDataAsync))]
+    [NativeBridgeResult(nameof(TestService.LoadProfileAsync))]
     public partial void onSuccess(string result);
 
-    [BridgeResult(nameof(TestService.GetCountAsync))]
+    [NativeBridgeResult(nameof(TestService.GetCountAsync))]
     public partial void onCountResult(int count);
 
-    [BridgeError(nameof(TestService.GetCountAsync))]
+    [NativeBridgeError(nameof(TestService.GetCountAsync))]
     public partial void onCountError();
 
-    [BridgeError(nameof(TestService.RequestLoginAsync))]
-    [BridgeError(nameof(TestService.FetchDataAsync))]
-    [BridgeError(nameof(TestService.LoadProfileAsync))]
+    [NativeBridgeError(nameof(TestService.RequestLoginAsync))]
+    [NativeBridgeError(nameof(TestService.FetchDataAsync))]
+    [NativeBridgeError(nameof(TestService.LoadProfileAsync))]
     public partial void onError(string error);
 
-    // 이벤트 — 어트리뷰트 없음, 메서드명이 Java 인터페이스와 1:1 매칭
+    // 이벤트 -- 어트리뷰트 없음, 메서드명이 Java 인터페이스와 1:1 매칭
     public partial void onStateChanged(string state);
     public partial void onProgress(int current, int total);
     public partial void onCompleted();
@@ -114,7 +119,7 @@ internal partial class TestServiceBridge
     BridgeType = typeof(TestServiceBridge))]
 public partial class TestService { ... }
 
-// 사용 — Bridge 프로퍼티로 이벤트 구독
+// 사용 -- Bridge 프로퍼티로 이벤트 구독
 var service = new TestService();
 service.Bridge.OnStateChanged += state => Debug.Log(state);
 service.Bridge.OnProgress += (current, total) => Debug.Log($"{current}/{total}");
@@ -123,10 +128,10 @@ service.Bridge.OnProgress += (current, total) => Debug.Log($"{current}/{total}")
 service.Dispose();
 ```
 
-- 메서드명, 파라미터 수/타입을 자유롭게 정의 — Java 인터페이스와 정확히 일치시키면 됨
-- 콜백 메서드는 `[BridgeResult(nameof(Method))]`/`[BridgeError(nameof(Method))]`로 대상 서비스 메서드를 지정 (필수)
+- 메서드명, 파라미터 수/타입을 자유롭게 정의 -- Java 인터페이스와 정확히 일치시키면 됨
+- 콜백 메서드는 `[NativeBridgeResult(nameof(Method))]`/`[NativeBridgeError(nameof(Method))]`로 대상 서비스 메서드를 지정 (필수)
 - 어트리뷰트가 없는 메서드는 이벤트로 생성
-- `AllowMultiple = true` — 하나의 브릿지 메서드가 여러 서비스 메서드를 처리 가능
+- `AllowMultiple = true` -- 하나의 브릿지 메서드가 여러 서비스 메서드를 처리 가능
 - 타입 변환: 동일 타입은 직접 전달, `string`에서 다른 타입은 `Parse`/`Deserialize` 자동 적용
 - 생성 코드에서 `_nativeBridge` 필드, `Bridge` 프로퍼티, `RegisterBridge` 메서드가 자동 생성
 
@@ -213,7 +218,7 @@ public class TestPlugin {
         }
     }
 
-    // 이벤트
+    // 이벤트 -- EventListenerAdd/Remove에 대응
     public void addListener(IServiceBridge listener) {
         this.bridge = listener;
     }
@@ -256,19 +261,18 @@ void MyPlugin_getUserAsync(const char* userId, int requestId, BridgeCallback cal
 public partial class TestService
 {
     [NativeMethod("initialize")]
-    [SandboxButton("Initialize")]
+    [SandboxMethod("Initialize")]
     public partial Task InitializeAsync();
 
     [NativeMethod("fetchData")]
-    [SandboxButton("Fetch Data")]
-    [SandboxParam("key", "test-key")]
+    [SandboxMethod("Fetch Data")]
     public partial Task<string> FetchDataAsync(string key);
 }
 ```
 
 **설정:** `Window > PolyBridge > Sandbox` 에디터 윈도우에서 Config 생성 및 제스처 설정.
 
-**제스처:** 키보드 단축키, 멀티 터치 등 여러 제스처를 동시에 등록 가능. 플레이 모드 또는 앱 실행 시 등록된 제스처 중 하나를 입력하면 Sandbox UI 토글.
+**제스처:** 키보드 단축키(`KeyboardShortcutGesture`), 멀티 터치(`MultiTouchGesture`) 등 여러 제스처를 동시에 등록 가능. 플레이 모드 또는 앱 실행 시 등록된 제스처 중 하나를 입력하면 Sandbox UI 토글.
 
 자세한 내용은 [PolyBridge.Sandbox/README.md](PolyBridge.Sandbox/README.md) 참고.
 
@@ -306,6 +310,7 @@ Unity Inspector에서 해당 DLL을 선택하고:
 | PB0004 | 비동기가 아닌 메서드에 CancellationToken이 있음 |
 | PB0005 | `[NativeBridge]` 클래스에 이미 base class가 있어 AndroidJavaProxy와 충돌 |
 | PB0006 | 비동기 메서드가 있지만 BridgeType이 지정되지 않음 |
+| PB0007 | 이벤트 메서드가 있지만 EventListenerAdd/EventListenerRemove가 설정되지 않음 |
 
 ## 테스트
 
