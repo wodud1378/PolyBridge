@@ -30,8 +30,8 @@ namespace PolyBridge.Generator.Generators
 
         public void GenerateDisposeBody(CodeBuilder builder, ServiceModel model)
         {
-            if (model.HasBridge)
-                builder.AppendLine("if (_nativeBridge != null) _bridge.Call(\"removeListener\", _nativeBridge);");
+            if (model.HasEventListener)
+                builder.AppendLine($"if (_nativeBridge != null) _bridge.Call(\"{model.EventListenerRemove}\", _nativeBridge);");
         }
 
         public void GenerateInnerClasses(CodeBuilder builder, ServiceModel model)
@@ -40,7 +40,8 @@ namespace PolyBridge.Generator.Generators
 
         public void GenerateBridgeRegistration(CodeBuilder builder, ServiceModel model)
         {
-            builder.AppendLine("_bridge.Call(\"addListener\", _nativeBridge);");
+            if (model.HasEventListener)
+                builder.AppendLine($"_bridge.Call(\"{model.EventListenerAdd}\", _nativeBridge);");
         }
 
         private static void GenerateSyncBody(CodeBuilder builder, MethodModel method)

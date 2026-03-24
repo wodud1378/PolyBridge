@@ -54,6 +54,11 @@ namespace PolyBridge.Generator
             "[NativeService] class '{0}' has async methods but no BridgeType specified; define a [NativeBridge] class with [BridgeResult]/[BridgeError] and set BridgeType = typeof(...)",
             "PolyBridge", DiagnosticSeverity.Error, true);
 
+        private static readonly DiagnosticDescriptor MissingEventListenerWarning = new(
+            "PB0007", "Bridge has event methods but no EventListenerAdd/Remove",
+            "[NativeBridge] for '{0}' has event methods but EventListenerAdd/EventListenerRemove are not set; events will not be registered with the native side",
+            "PolyBridge", DiagnosticSeverity.Warning, true);
+
         // ========== Initialization ==========
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -98,6 +103,9 @@ namespace PolyBridge.Generator
             // Resolve BridgeType
             string bridgeTypeName = null;
             string bridgeAccessModifier = "internal";
+            var bridgeHasEventMethods = false;
+            string eventListenerAdd = null;
+            string eventListenerRemove = null;
             var resultMappings = ImmutableArray<CallbackMapping>.Empty;
             var errorMappings = ImmutableArray<CallbackMapping>.Empty;
 
@@ -121,11 +129,15 @@ namespace PolyBridge.Generator
                     {
                         bridgeTypeName = info.Value.TypeName;
                         bridgeAccessModifier = info.Value.AccessModifier;
+                        bridgeHasEventMethods = info.Value.HasEventMethods;
+                        eventListenerAdd = info.Value.EventListenerAdd;
+                        eventListenerRemove = info.Value.EventListenerRemove;
                         resultMappings = info.Value.ResultMappings;
                         errorMappings = info.Value.ErrorMappings;
                     }
                 }
             }
+
 
             // Resolve methods + mock mappings
             var methodAttrSymbol = compilation.GetTypeByMetadataName("PolyBridge.Core.Attributes.NativeMethodAttribute");
@@ -158,6 +170,8 @@ namespace PolyBridge.Generator
                 classSymbol.ContainingNamespace.IsGlobalNamespace ? null : classSymbol.ContainingNamespace.ToDisplayString(),
                 classPath,
                 bridgeTypeName, bridgeAccessModifier,
+                eventListenerAdd, eventListenerRemove,
+                bridgeHasEventMethods && string.IsNullOrEmpty(eventListenerAdd),
                 resultMappings, errorMappings,
                 syntax.SyntaxTree.FilePath,
                 CompilationHelper.GetEmitPhysicalFiles(compilation),
@@ -178,6 +192,8 @@ namespace PolyBridge.Generator
                 context.ReportDiagnostic(Diagnostic.Create(NotPartialMethodWarning, Location.None, model.ClassName, name));
             if (model.HasAsyncMethods && !model.HasBridge)
                 context.ReportDiagnostic(Diagnostic.Create(MissingBridgeError, Location.None, model.ClassName));
+            if (model.WarnMissingEventListener)
+                context.ReportDiagnostic(Diagnostic.Create(MissingEventListenerWarning, Location.None, model.ClassName));
             foreach (var method in model.Methods)
             {
                 if (method.HasCancellationToken && !method.IsAsync)

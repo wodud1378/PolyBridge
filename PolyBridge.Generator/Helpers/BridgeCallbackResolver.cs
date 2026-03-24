@@ -11,6 +11,9 @@ namespace PolyBridge.Generator.Helpers
         {
             public string TypeName;
             public string AccessModifier;
+            public bool HasEventMethods;
+            public string EventListenerAdd;
+            public string EventListenerRemove;
             public ImmutableArray<CallbackMapping> ResultMappings;
             public ImmutableArray<CallbackMapping> ErrorMappings;
         }
@@ -24,14 +27,20 @@ namespace PolyBridge.Generator.Helpers
 
             var resultMappings = ImmutableArray.CreateBuilder<CallbackMapping>();
             var errorMappings = ImmutableArray.CreateBuilder<CallbackMapping>();
+            var hasEventMethods = false;
 
             foreach (var member in bridgeTypeSymbol.GetMembers().OfType<IMethodSymbol>())
             {
+                if (!member.IsPartialDefinition || !member.ReturnsVoid) continue;
+
                 var methodName = member.Name;
                 var eventName = char.ToUpperInvariant(methodName[0]) + methodName.Substring(1);
                 var memberParams = member.Parameters
                     .Select(p => new ParameterModel(p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), p.Name))
                     .ToImmutableArray();
+
+                var isResult = false;
+                var isError = false;
 
                 if (bridgeResultAttrSymbol != null)
                 {
@@ -41,7 +50,10 @@ namespace PolyBridge.Generator.Helpers
                             ? attr.ConstructorArguments[0].Value?.ToString()
                             : null;
                         if (targetMethodName != null)
+                        {
                             resultMappings.Add(new CallbackMapping(targetMethodName, eventName, memberParams));
+                            isResult = true;
+                        }
                     }
                 }
 
@@ -53,8 +65,29 @@ namespace PolyBridge.Generator.Helpers
                             ? attr.ConstructorArguments[0].Value?.ToString()
                             : null;
                         if (targetMethodName != null)
+                        {
                             errorMappings.Add(new CallbackMapping(targetMethodName, eventName, memberParams));
+                            isError = true;
+                        }
                     }
+                }
+
+                if (!isResult && !isError)
+                    hasEventMethods = true;
+            }
+
+            // Extract EventListenerAdd/Remove from NativeBridge attribute
+            string eventListenerAdd = null;
+            string eventListenerRemove = null;
+            foreach (var attr in bridgeTypeSymbol.GetAttributes())
+            {
+                if (attr.AttributeClass?.Name != "NativeBridgeAttribute") continue;
+                foreach (var named in attr.NamedArguments)
+                {
+                    if (named.Key == "EventListenerAdd")
+                        eventListenerAdd = named.Value.Value?.ToString();
+                    else if (named.Key == "EventListenerRemove")
+                        eventListenerRemove = named.Value.Value?.ToString();
                 }
             }
 
@@ -62,6 +95,9 @@ namespace PolyBridge.Generator.Helpers
             {
                 TypeName = bridgeTypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 AccessModifier = CompilationHelper.GetAccessibilityString(bridgeTypeSymbol.DeclaredAccessibility),
+                HasEventMethods = hasEventMethods,
+                EventListenerAdd = eventListenerAdd,
+                EventListenerRemove = eventListenerRemove,
                 ResultMappings = resultMappings.ToImmutable(),
                 ErrorMappings = errorMappings.ToImmutable()
             };

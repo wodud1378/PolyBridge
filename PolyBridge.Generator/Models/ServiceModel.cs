@@ -31,6 +31,9 @@ namespace PolyBridge.Generator.Models
         string ClassPath,
         string BridgeTypeName,
         string BridgeAccessModifier,
+        string EventListenerAdd,
+        string EventListenerRemove,
+        bool WarnMissingEventListener,
         ImmutableArray<CallbackMapping> CallbackResultMappings,
         ImmutableArray<CallbackMapping> CallbackErrorMappings,
         string SourceFilePath,
@@ -43,6 +46,9 @@ namespace PolyBridge.Generator.Models
         public string ClassPath { get; } = ClassPath;
         public string BridgeTypeName { get; } = BridgeTypeName;
         public string BridgeAccessModifier { get; } = BridgeAccessModifier;
+        public string EventListenerAdd { get; } = EventListenerAdd;
+        public string EventListenerRemove { get; } = EventListenerRemove;
+        public bool WarnMissingEventListener { get; } = WarnMissingEventListener;
         public ImmutableArray<CallbackMapping> CallbackResultMappings { get; } = CallbackResultMappings;
         public ImmutableArray<CallbackMapping> CallbackErrorMappings { get; } = CallbackErrorMappings;
         public string SourceFilePath { get; } = SourceFilePath;
@@ -51,6 +57,7 @@ namespace PolyBridge.Generator.Models
         public ImmutableArray<string> NonPartialMethodNames { get; } = NonPartialMethodNames;
 
         public bool HasBridge => !string.IsNullOrEmpty(BridgeTypeName);
+        public bool HasEventListener => !string.IsNullOrEmpty(EventListenerAdd);
         public bool HasAsyncMethods => Methods.Any(m => m.IsAsync);
 
         public CallbackMapping GetResultMapping(string methodName)
@@ -71,6 +78,8 @@ namespace PolyBridge.Generator.Models
                    ClassPath == other.ClassPath &&
                    BridgeTypeName == other.BridgeTypeName &&
                    BridgeAccessModifier == other.BridgeAccessModifier &&
+                   EventListenerAdd == other.EventListenerAdd &&
+                   EventListenerRemove == other.EventListenerRemove &&
                    CallbackResultMappings.SequenceEqual(other.CallbackResultMappings) &&
                    CallbackErrorMappings.SequenceEqual(other.CallbackErrorMappings) &&
                    SourceFilePath == other.SourceFilePath &&
@@ -79,6 +88,6 @@ namespace PolyBridge.Generator.Models
                    NonPartialMethodNames.SequenceEqual(other.NonPartialMethodNames);
         }
 
-        public override int GetHashCode() => HashHelper.Combine(ClassName, Namespace, ClassPath, BridgeTypeName, BridgeAccessModifier, CallbackResultMappings, CallbackErrorMappings, SourceFilePath, EmitPhysicalFiles, Methods, NonPartialMethodNames);
+        public override int GetHashCode() => HashHelper.Combine(ClassName, Namespace, ClassPath, BridgeTypeName, BridgeAccessModifier, EventListenerAdd, EventListenerRemove, CallbackResultMappings, CallbackErrorMappings, SourceFilePath, EmitPhysicalFiles, Methods, NonPartialMethodNames);
     }
 }

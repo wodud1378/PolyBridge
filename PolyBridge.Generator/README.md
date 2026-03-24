@@ -37,7 +37,7 @@ Builders/     코드 빌더 유틸리티 (CodeBuilder, SourceEmitter)
 
 `NativeBridge` 클래스 자체가 `AndroidJavaProxy`로 생성. 하나의 브릿지에서 콜백과 이벤트를 모두 처리.
 
-- **콜백 메서드** -- `[BridgeResult]`/`[BridgeError]` 어트리뷰트가 붙은 메서드
+- **콜백 메서드** -- `[NativeBridgeResult]`/`[NativeBridgeError]` 어트리뷰트가 붙은 메서드
 - **이벤트 메서드** -- 어트리뷰트가 없는 메서드
 
 ```csharp
@@ -83,11 +83,11 @@ public partial class TestService : System.IDisposable
     // ...
 }
 
-// TestServiceAndroidImpl.g.cs
+// TestServiceAndroidImpl.g.cs -- HasEventListener가 true일 때 (EventListenerAdd 설정됨)
 internal void RegisterBridge(TestServiceBridge bridge)
 {
     _nativeBridge = bridge;
-    _bridge.Call("addListener", _nativeBridge);
+    _bridge.Call("addListener", _nativeBridge);   // EventListenerAdd
 }
 ```
 
@@ -111,15 +111,27 @@ internal void RegisterBridge(TestServiceBridge bridge)
 | `EventName` | C# event명 (첫 글자 대문자) |
 | `Parameters` | 파라미터 목록 (복수 파라미터 지원) |
 | `EventDelegateType` | 이벤트 델리게이트 타입 (예: `System.Action<string, int>`) |
-| `TargetMethodName` | `[BridgeResult]`/`[BridgeError]`로 지정된 대상 서비스 메서드명 |
+| `TargetMethodName` | `[NativeBridgeResult]`/`[NativeBridgeError]`로 지정된 대상 서비스 메서드명 |
 
 ### 콜백 코드 생성 규칙
 
-- `[BridgeResult(nameof(Method))]` / `[BridgeError(nameof(Method))]` -- 대상 메서드 지정 필수 (파라미터 없는 생성자 없음)
+- `[NativeBridgeResult(nameof(Method))]` / `[NativeBridgeError(nameof(Method))]` -- 대상 메서드 지정 필수 (파라미터 없는 생성자 없음)
 - `AllowMultiple = true` -- 하나의 브릿지 메서드가 여러 서비스 메서드를 처리 가능
 - 0-파라미터 브릿지 메서드 -> `() =>` 람다로 생성
 - 타입 변환: 동일 타입(예: `int`->`int`) -> 직접 전달, `string`->다른 타입 -> `Parse`/`Deserialize` 자동 적용
 - 어트리뷰트가 없는 메서드는 이벤트로 취급
+
+## 진단 경고
+
+| ID | 설명 |
+|---|---|
+| PB0001 | `[NativeService]` 클래스에 `[NativeMethod]`가 없음 |
+| PB0002 | AndroidClassPath가 비어 있음 |
+| PB0003 | `[NativeMethod]`가 partial이 아님 |
+| PB0004 | 비동기가 아닌 메서드에 CancellationToken이 있음 |
+| PB0005 | `[NativeBridge]` 클래스에 이미 base class가 있어 AndroidJavaProxy와 충돌 |
+| PB0006 | 비동기 메서드가 있지만 BridgeType이 지정되지 않음 |
+| PB0007 | 이벤트 메서드가 있지만 EventListenerAdd/EventListenerRemove가 설정되지 않음 |
 
 ## 플랫폼 생성기 확장
 
