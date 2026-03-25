@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using PolyBridge.Core.Attributes;
 using PolyBridge.Sandbox;
 
@@ -16,15 +17,15 @@ public partial class PaymentService
     [SandboxMethod("Get Service Name")]
     public partial string GetServiceName();
 
-    // 비동기 — void
+    // 비동기 — UniTask void
     [NativeMethod("initialize")]
     [SandboxMethod("Initialize")]
-    public partial Task InitializeAsync();
+    public partial UniTask InitializeAsync();
 
-    // 비동기 — 복합 타입 반환
+    // 비동기 — UniTask 복합 타입 반환
     [NativeMethod("purchase")]
     [SandboxMethod("Purchase")]
-    public partial Task<PaymentResult> PurchaseAsync(string productId, int amount);
+    public partial UniTask<PaymentResult> PurchaseAsync(string productId, int amount);
 
     // 비동기 — string 반환
     [NativeMethod("getReceipt")]
@@ -39,10 +40,10 @@ public partial class PaymentService
     internal string MockReturnGetServiceName() => "PaymentService-mock";
 
     [MockReturn(nameof(InitializeAsync))]
-    internal Task MockReturnInitializeAsync() => Task.CompletedTask;
+    internal UniTask MockReturnInitializeAsync() => UniTask.CompletedTask;
 
     [MockReturn(nameof(PurchaseAsync))]
-    internal Task<PaymentResult> MockReturnPurchaseAsync() => Task.FromResult(new PaymentResult
+    internal UniTask<PaymentResult> MockReturnPurchaseAsync() => UniTask.FromResult(new PaymentResult
     {
         transactionId = "mock_txn_001",
         productId = "item_001",

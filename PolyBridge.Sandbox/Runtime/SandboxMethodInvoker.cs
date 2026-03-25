@@ -76,15 +76,11 @@ namespace PolyBridge.Sandbox
             if (result is Task task)
                 return await ResolveTask(task, returnType);
 
-            // UniTask — AsTask()로 변환
+            // UniTask
             var resultType = result.GetType();
-            var asTaskMethod = resultType.GetMethod("AsTask");
-            if (asTaskMethod != null && typeof(Task).IsAssignableFrom(asTaskMethod.ReturnType))
-            {
-                var task2 = (Task)asTaskMethod.Invoke(result, null);
-                return await ResolveTask(task2, asTaskMethod.ReturnType);
-            }
-
+            if (resultType.FullName != null && resultType.FullName.StartsWith("Cysharp.Threading.Tasks.UniTask"))
+                return await ResolveUniTask(result, resultType);
+            
             // Sync with return value
             return SandboxResult.Ok(FormatValue(result));
         }
@@ -101,18 +97,30 @@ namespace PolyBridge.Sandbox
             var resultProp = genericTaskType.GetProperty("Result");
 
             if (resultProp == null)
-            {
-                Debug.LogWarning($"[PolyBridge Sandbox] No Result property on {genericTaskType.Name}");
                 return SandboxResult.Ok("(null)");
-            }
 
             var taskResult = resultProp.GetValue(task);
-            Debug.Log($"[PolyBridge Sandbox] Task result: {taskResult?.GetType().Name ?? "null"}");
+            return SandboxResult.Ok(taskResult == null ? "(null)" : FormatValue(taskResult));
+        }
+        
+        private static async Task<SandboxResult> ResolveUniTask(object result, Type resultType)
+        {
+            var awaiter = resultType.GetMethod("GetAwaiter")?.Invoke(result, null);
+            if (awaiter != null)
+            {
+                var awaiterType = awaiter.GetType();
+                var isCompleted = awaiterType.GetProperty("IsCompleted");
+                var getResult = awaiterType.GetMethod("GetResult");
+                while (isCompleted?.GetValue(awaiter) is false)
+                    await Task.Yield();
 
-            if (taskResult == null)
-                return SandboxResult.Ok("(null)");
+                if (getResult?.ReturnType == typeof(void))
+                    return SandboxResult.Ok("(void)");
 
-            return SandboxResult.Ok(FormatValue(taskResult));
+                var taskResult = getResult?.Invoke(awaiter, null);
+                return SandboxResult.Ok(FormatValue(taskResult));
+            }
+            return SandboxResult.Ok("(void)");
         }
 
         private static string FormatValue(object value)
