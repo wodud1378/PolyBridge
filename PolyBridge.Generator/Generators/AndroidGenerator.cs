@@ -16,6 +16,7 @@ namespace PolyBridge.Generator.Generators
             if (model.HasAsyncMethods)
             {
                 builder.AppendLine("// prevent GC from collecting AndroidJavaProxy callbacks during async calls");
+                builder.AppendLine("private readonly object _callbackLock = new();");
                 builder.AppendLine("private readonly System.Collections.Generic.List<object> _pendingCallbacks = new();");
             }
         }
@@ -89,7 +90,7 @@ namespace PolyBridge.Generator.Generators
             if (model?.HasBridge == true)
             {
                 builder.AppendLine($"var callback = new {model.BridgeTypeName}();");
-                builder.AppendLine("_pendingCallbacks.Add(callback);");
+                builder.AppendLine("lock (_callbackLock) _pendingCallbacks.Add(callback);");
             }
             else
             {
@@ -160,8 +161,8 @@ namespace PolyBridge.Generator.Generators
             builder.AppendLine($"_bridge.Call(\"{method.AndroidNativeName}\", {paramArgs}callback);");
 
             var finallyBody = method.HasCancellationToken
-                ? "ctr.Dispose(); _pendingCallbacks.Remove(callback);"
-                : "_pendingCallbacks.Remove(callback);";
+                ? "ctr.Dispose(); lock (_callbackLock) _pendingCallbacks.Remove(callback);"
+                : "lock (_callbackLock) _pendingCallbacks.Remove(callback);";
             builder.AppendLine($"try {{ {awaitExpr} }}");
             builder.AppendLine($"finally {{ {finallyBody} }}");
         }
