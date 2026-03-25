@@ -274,7 +274,16 @@ public partial class TestService
 
 **설정:** `Window > PolyBridge > Sandbox` 에디터 윈도우에서 Config 생성 및 제스처 설정.
 
-**제스처:** 키보드 단축키(`KeyboardShortcutGesture`), 멀티 터치(`MultiTouchGesture`) 등 여러 제스처를 동시에 등록 가능. 플레이 모드 또는 앱 실행 시 등록된 제스처 중 하나를 입력하면 Sandbox UI 토글.
+**제스처:** 키보드 단축키, 멀티 터치 등 여러 제스처를 동시에 등록 가능. 플레이 모드 또는 앱 실행 시 등록된 제스처 중 하나를 입력하면 Sandbox UI 토글.
+
+**기능:**
+- 서비스별 탭 → Methods | Events 서브 탭
+- 메서드 호출 + 파라미터 입력 + 결과/에러 표시
+- 브릿지 이벤트 실시간 모니터링
+- 콘솔 (I/W/E/N 필터, 검색, 로그 탭 시 클립보드 복사)
+- Android logcat 네이티브 로그 연동 (N)
+- `[PolyBridge Sandbox]` 프리픽스 디버그 로깅
+
 
 자세한 내용은 [PolyBridge.Sandbox/README.md](PolyBridge.Sandbox/README.md) 참고.
 

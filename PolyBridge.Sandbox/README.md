@@ -42,8 +42,6 @@ PolyBridge.Sandbox/
 
 ## 어트리뷰트
 
-`PolyBridge.Sandbox` 네임스페이스, `Runtime/Attributes/` 디렉토리에 위치.
-
 서비스 클래스에 다음 어트리뷰트를 추가하면 Sandbox UI가 자동 구성됨:
 
 | 어트리뷰트 | 대상 | 설명 |
@@ -141,7 +139,7 @@ Sandbox UI 토글 (표시/숨김)
 → Events: 브릿지 이벤트 구독 → 이벤트명별 실시간 로그 표시
 ```
 
-### 정적 API
+## 정적 API
 
 `autoInitialize = false`일 때 또는 코드에서 직접 제어할 때:
 
@@ -153,11 +151,11 @@ SandboxRunner.ToggleSandbox();
 
 ## 런타임 UI
 
-- **서비스 탭** -- `[Sandbox]` 어트리뷰트가 붙은 서비스별로 생성
 - **서브 탭** -- 각 서비스 내 `Methods` | `Events` 탭
 - **Methods 탭** -- `[SandboxMethod]`이 붙은 메서드마다 버튼 생성. 비동기 메서드는 `(async)` 표시. 파라미터 입력 필드와 호출 결과/에러 메시지 표시
 - **Events 탭** -- 브릿지 이벤트를 구독하여 이벤트명별 실시간 로그를 표시
-- **콘솔** -- I(Info)/W(Warning)/E(Error)/N(Native) 필터 버튼, 검색 기능, 3단계 상태 전환 (Minimized/Medium/Maximized)
-- **네이티브 로그** -- `INativeLogReader` 인터페이스를 통해 플랫폼별 네이티브 로그를 읽어와 콘솔에 표시. Android는 `AndroidLogReader`로 logcat 연동, `NativeLogReaderFactory`로 플랫폼별 인스턴스 생성
+- **콘솔** -- I(Info)/W(Warning)/E(Error)/N(Native) 필터 버튼, 검색 기능, 3단계 상태 전환 (Minimized/Medium/Maximized). 로그 항목 탭 시 클립보드에 복사
+- **네이티브 로그** -- Android에서 logcat을 읽어 콘솔에 표시. 2초 간격으로 현재 프로세스 로그를 자동 수집
+- **디버그 로깅** -- 초기화, 서비스 스캔, 인스턴스 생성, 메서드 호출, 이벤트 구독 등 주요 동작마다 `[PolyBridge Sandbox]` 프리픽스로 Unity 콘솔에 로그 출력. 콘솔 Medium/Maximized 상태에서 Sandbox UI 안에서도 확인 가능
 
 에디터에서는 Mock 결과, Android에서는 실제 네이티브 결과가 표시됨.
